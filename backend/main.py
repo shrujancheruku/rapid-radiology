@@ -3,23 +3,21 @@ from contextlib import asynccontextmanager
 from typing import List
 
 import jwt
-from openai import OpenAI
 from alembic import command
 from alembic.config import Config
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+from openai import OpenAI
 from sqlmodel import Session, select, create_engine
 
 from models import ReportTemplate, ReportType, ApiReportTemplate, GenerateReportResponse, GenerateReportRequest
 
 # --- Config ---
+load_dotenv()
 ENV = os.getenv("ENV", "development")
-if ENV == "production":
-    SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")  # from your Supabase project settings
-    DATABASE_URL = os.getenv("DATABASE_URL")  # Postgres connection string from Supabase
-else:
-    SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
-    DATABASE_URL = "sqlite:///test.db"
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")  # from your Supabase project settings
+DATABASE_URL = os.getenv("DATABASE_URL")  # Postgres connection string from Supabase
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -93,6 +91,7 @@ app.add_middleware(
 async def health():
     return {"status": "ok"}
 
+
 # Create or update template (upsert behavior)
 @app.post("/templates", response_model=ApiReportTemplate)
 def upsert_template(
@@ -100,27 +99,28 @@ def upsert_template(
         user_id: str = Depends(get_current_user),
         session: Session = Depends(get_session),
 ):
-    # Check if the user already has a template for this report_type
-    existing = session.exec(
-        select(ReportTemplate).where(
-            ReportTemplate.user_id == user_id,
-            ReportTemplate.report_type == template.report_type,
-        )
-    ).first()
+    try:
 
-    if existing:
-        # Update
-        existing.template_text = template.template_text
-        session.add(existing)
-        session.commit()
-        session.refresh(existing)
-        return ApiReportTemplate(
-            report_type=existing.report_type,
-            template_text=existing.template_text,
-        )
-    else:
-        # Create new
-        try:
+        # Check if the user already has a template for this report_type
+        existing = session.exec(
+            select(ReportTemplate).where(
+                ReportTemplate.user_id == user_id,
+                ReportTemplate.report_type == template.report_type,
+            )
+        ).first()
+
+        if existing:
+            # Update
+            existing.template_text = template.template_text
+            session.add(existing)
+            session.commit()
+            session.refresh(existing)
+            return ApiReportTemplate(
+                report_type=existing.report_type,
+                template_text=existing.template_text,
+            )
+        else:
+            # Create new
             template = ReportTemplate(user_id=user_id, report_type=template.report_type,
                                       template_text=template.template_text)
             session.add(template)
@@ -130,9 +130,9 @@ def upsert_template(
                 report_type=template.report_type,
                 template_text=template.template_text,
             )
-        except Exception as e:
-            print(e)
-            raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 # Read all templates for the current user
@@ -201,9 +201,9 @@ def delete_template(
 # --- Generate report endpoint ---
 @app.post("/generate-report", response_model=GenerateReportResponse)
 async def generate_report(
-    req: GenerateReportRequest,
-    user_id: str = Depends(get_current_user),
-    session: Session = Depends(get_session),
+        req: GenerateReportRequest,
+        user_id: str = Depends(get_current_user),
+        session: Session = Depends(get_session),
 ):
     template = session.exec(
         select(ReportTemplate).where(
@@ -258,4 +258,3 @@ async def generate_report(
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
-

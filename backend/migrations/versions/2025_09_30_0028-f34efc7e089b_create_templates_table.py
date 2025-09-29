@@ -1,8 +1,8 @@
 """create templates table
 
-Revision ID: efd600dacb0b
+Revision ID: f34efc7e089b
 Revises: 
-Create Date: 2025-09-28 15:59:02.139270
+Create Date: 2025-09-30 00:28:58.981258
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'efd600dacb0b'
+revision: str = 'f34efc7e089b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.create_table('reporttemplate',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('report_type', sa.Enum('chest_ct', 'abdomen_ct', 'foot_mri', 'shoulder_mri', name='reporttype'), nullable=False),
+    sa.Column('report_type', sa.Enum('CHEST_CT', 'ABDOMEN_CT', 'FOOT_MRI', 'SHOULDER_MRI', name='reporttype'), nullable=False),
     sa.Column('template_text', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id', 'report_type')
