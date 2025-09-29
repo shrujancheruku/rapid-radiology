@@ -215,4 +215,8 @@ frontend/.idea/*
 backend/.idea/
 backend/.idea/*
 
+backend/supabase/
+
+backend/test.db
+backend/.env
 backend/test.db

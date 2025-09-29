@@ -2,6 +2,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
+from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
@@ -16,11 +17,8 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-env = os.getenv("ENV", "development")
-if env == "development":
-    url = "sqlite:///test.db"
-else:
-    url = os.getenv("DATABASE_URL")
+load_dotenv()
+url = os.getenv("DATABASE_URL")
 
 config.set_main_option("sqlalchemy.url", url)
 

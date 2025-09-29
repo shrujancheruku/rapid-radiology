@@ -1,8 +1,8 @@
 """create templates table
 
-Revision ID: f34efc7e089b
+Revision ID: 6a330ce4a331
 Revises: 
-Create Date: 2025-09-30 00:28:58.981258
+Create Date: 2025-09-30 00:43:44.512149
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'f34efc7e089b'
+revision: str = '6a330ce4a331'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
