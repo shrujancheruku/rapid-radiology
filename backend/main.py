@@ -137,7 +137,7 @@ def upsert_template(
 
 # Read all templates for the current user
 
-@app.get("/templates/", response_model=List[ApiReportTemplate])
+@app.get("/templates", response_model=List[ApiReportTemplate])
 def read_templates(
         user_id: str = Depends(get_current_user),
         session: Session = Depends(get_session),
