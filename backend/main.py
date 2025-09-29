@@ -88,6 +88,11 @@ app.add_middleware(
 
 # --- CRUD Endpoints ---
 
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 # Create or update template (upsert behavior)
 @app.post("/templates/", response_model=ApiReportTemplate)
 def upsert_template(
