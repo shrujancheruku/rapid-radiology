@@ -1,18 +1,19 @@
 """create templates table
 
-Revision ID: 38911095376f
+Revision ID: efd600dacb0b
 Revises: 
-Create Date: 2025-09-23 11:43:38.611128
+Create Date: 2025-09-28 15:59:02.139270
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '38911095376f'
+revision: str = 'efd600dacb0b'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

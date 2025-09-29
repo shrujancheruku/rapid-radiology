@@ -4,12 +4,11 @@ from typing import Optional
 
 from sqlmodel import SQLModel, Field, UniqueConstraint
 
-
 class ReportType(str, Enum):
-    chest_ct = "Chest CT"
-    abdomen_ct = "Abdomen CT"
-    foot_mri = "Foot MRI"
-    shoulder_mri = "Shoulder MRI"
+    CHEST_CT = "Chest CT"
+    ABDOMEN_CT = "Abdomen CT"
+    FOOT_MRI = "Foot MRI"
+    SHOULDER_MRI = "Shoulder MRI"
 
 
 # --- Database Model ---
@@ -23,6 +22,14 @@ class ReportTemplate(SQLModel, table=True):
 
 
 # Response schema (doesn't expose user_id)
-class ReportTemplateResponse(SQLModel):
+class ApiReportTemplate(SQLModel):
     report_type: ReportType
     template_text: Optional[str]
+
+class GenerateReportRequest(SQLModel):
+    report_type: ReportType
+    radiologist_input: str
+
+class GenerateReportResponse(SQLModel):
+    report_text: str
+

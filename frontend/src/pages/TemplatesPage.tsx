@@ -1,129 +1,158 @@
-import {ChangeEvent, useEffect, useState} from "react";
-import axios from "axios";
-
-import {useAuth} from "../contexts/AuthContext";
-import {useNotifications} from "../contexts/NotificationContext";
-import DarkModeToggle from "../components/DarkModeToggle";
-import {ReportTemplate, ReportType} from "../types";
+import { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useNotifications } from "../contexts/NotificationContext";
+import { ALL_REPORT_TYPES, ReportTemplate, ReportType } from "../types";
+import Layout from "../components/Layout";
+import Template from "../components/Template";
+import { ApiClient } from "../clients/ApiClient";
 
 interface TemplateState extends ReportTemplate {
     saving: boolean;
     error: string | null;
     success: boolean;
-    debounceTimer?: number;
 }
 
 export default function TemplatesPage() {
-    const {user, logout} = useAuth();
-    const {addNotification} = useNotifications();
+    const { user, session } = useAuth();
+    const { addNotification } = useNotifications();
+
     const [templates, setTemplates] = useState<TemplateState[]>([]);
     const [loading, setLoading] = useState(true);
+    const [openTemplate, setOpenTemplate] = useState<ReportType | null>(null);
+    const [showDropdown, setShowDropdown] = useState(false);
 
-    const API_URL = import.meta.env.VITE_API_URL as string;
+    const apiClient = new ApiClient(session);
 
     const fetchTemplates = async () => {
         if (!user) return;
-        const token = await user.getIdToken();
         try {
-            const res = await axios.get<ReportTemplate[]>(`${API_URL}/me/templates`, {
-                headers: {Authorization: `Bearer ${token}`},
-            });
+            const data = await apiClient.getTemplates();
             setTemplates(
-                res.data.map((t) => ({...t, saving: false, error: null, success: false}))
+                data.map((t) => ({ ...t, saving: false, success: false, error: null }))
             );
-        } catch (err) {
+        } catch (err: any) {
             addNotification("Error fetching templates", "error");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleChange = (report_type: ReportType, value: string) => {
-        setTemplates((prev) =>
-            prev.map((t) => {
-                if (t.report_type === report_type) {
-                    if (t.debounceTimer) clearTimeout(t.debounceTimer);
-                    const timer = window.setTimeout(() => saveTemplate({...t, template_text: value}), 800);
-                    return {...t, template_text: value, success: false, error: null, debounceTimer: timer};
-                }
-                return t;
-            })
-        );
-    };
+    const saveTemplate = async (report_type: ReportType, value: string) => {
+        if (!user || !value) return;
 
-    const saveTemplate = async (template: TemplateState) => {
-        if (!user) return;
         setTemplates((prev) =>
             prev.map((t) =>
-                t.report_type === template.report_type ? {...t, saving: true, error: null} : t
+                t.report_type === report_type ? { ...t, saving: true, error: null } : t
             )
         );
+
         try {
-            const token = await user.getIdToken();
-            await axios.post(
-                `${API_URL}/templates/`,
-                {report_type: template.report_type, template_text: template.template_text},
-                {headers: {Authorization: `Bearer ${token}`}}
-            );
+            await apiClient.saveTemplate(report_type, value);
             setTemplates((prev) =>
                 prev.map((t) =>
-                    t.report_type === template.report_type
-                        ? {...t, saving: false, success: true}
-                        : t
+                    t.report_type === report_type ? { ...t, saving: false, success: true } : t
                 )
             );
-            addNotification(`${template.report_type} saved`, "success");
+            addNotification(`${report_type} saved`, "success");
         } catch (err: any) {
             setTemplates((prev) =>
                 prev.map((t) =>
-                    t.report_type === template.report_type
-                        ? {...t, saving: false, error: err.message}
-                        : t
+                    t.report_type === report_type ? { ...t, saving: false, error: err.message } : t
                 )
             );
-            addNotification(`Error saving ${template.report_type}: ${err.message}`, "error");
+            addNotification(`Error saving ${report_type}: ${err.message}`, "error");
         }
     };
+
+    const addTemplate = (report_type: ReportType) => {
+        setShowDropdown(false);
+
+        if (templates.find((t) => t.report_type === report_type)) return;
+
+        const newTemplate: TemplateState = {
+            report_type,
+            template_text: "",
+            saving: false,
+            success: false,
+            error: null,
+        };
+
+        setTemplates((prev) => [...prev, newTemplate]);
+        setOpenTemplate(report_type);
+    };
+
+    const availableReportTypes = ALL_REPORT_TYPES.filter(
+        (rt) => !templates.some((t) => t.report_type === rt)
+    );
 
     useEffect(() => {
         fetchTemplates();
     }, [user]);
 
-    if (loading) return <p className="p-4 text-gray-600 dark:text-gray-300">Loading...</p>;
+    if (loading) return <Layout>Loading...</Layout>;
 
     return (
-        <div className="max-w-3xl mx-auto p-4">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Templates</h2>
-                <div className="flex space-x-2">
-                    <DarkModeToggle/>
-                    <button
-                        onClick={logout}
-                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                    >
-                        Logout
-                    </button>
-                </div>
-            </div>
-
-            {templates.map((t) => (
-                <div key={t.report_type} className="mb-6 p-4 border rounded shadow-sm bg-white dark:bg-gray-800">
-                    <h3 className="text-lg font-semibold mb-2 text-gray-800 dark:text-gray-100">{t.report_type}</h3>
-                    <textarea
-                        value={t.template_text || ""}
-                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                            handleChange(t.report_type, e.target.value)
+        <Layout>
+            <div className="space-y-6">
+                {templates.map((template) => (
+                    <Template
+                        key={template.report_type}
+                        id={`template-${template.report_type}`}
+                        reportType={template.report_type}
+                        templateText={template.template_text}
+                        saving={template.saving}
+                        success={template.success}
+                        error={template.error}
+                        handleChange={(rt, val) =>
+                            setTemplates((prev) =>
+                                prev.map((t) =>
+                                    t.report_type === rt ? { ...t, template_text: val, success: false, error: null } : t
+                                )
+                            )
                         }
-                        rows={5}
-                        className="w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                        saveTemplate={saveTemplate}
+                        isOpen={openTemplate === template.report_type}
+                        onToggle={() =>
+                            setOpenTemplate((prev) =>
+                                prev === template.report_type ? null : template.report_type
+                            )
+                        }
                     />
-                    <div className="mt-2 flex items-center space-x-2">
-                        {t.saving && <span className="text-gray-500 dark:text-gray-300 font-medium">Saving...</span>}
-                        {t.success && <span className="text-green-500 font-medium">Saved!</span>}
-                        {t.error && <span className="text-red-500 font-medium">{t.error}</span>}
+                ))}
+
+                <div className="relative">
+                    <button
+                        onClick={() => setShowDropdown((prev) => !prev)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition flex items-center justify-between w-56"
+                    >
+                        <span>Create New Template</span>
+                        <span className="ml-2 transition-transform duration-300" style={{ transform: showDropdown ? "rotate(180deg)" : "rotate(0deg)" }}>
+              ▼
+            </span>
+                    </button>
+
+                    <div
+                        className={`absolute left-0 mt-2 w-56 rounded transition-all duration-300 ease-in-out ${
+                            showDropdown ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                        }`}
+                        style={{ transitionProperty: "max-height, opacity" }}
+                    >
+                        {availableReportTypes.length > 0 ? (
+                            availableReportTypes.map((rt) => (
+                                <button
+                                    key={rt}
+                                    onClick={() => addTemplate(rt)}
+                                    className="block w-full text-left px-4 py-2 mb-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    {rt}
+                                </button>
+                            ))
+                        ) : (
+                            <p className="px-4 py-2 text-gray-500 dark:text-gray-400">All templates created</p>
+                        )}
                     </div>
                 </div>
-            ))}
-        </div>
+            </div>
+        </Layout>
     );
 }

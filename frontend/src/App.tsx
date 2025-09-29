@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth, AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import HomePage from "./pages/HomePage"
 import LoginPage from "./pages/LoginPage";
 import TemplatesPage from "./pages/TemplatesPage";
 
@@ -10,7 +11,8 @@ function AppWrapper() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={user ? <TemplatesPage /> : <Navigate to="/login" />} />
+                <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" />} />
+                <Route path="/templates" element={user ? <TemplatesPage /> : <Navigate to="/login" />} />
                 <Route path="/login" element={<LoginPage />} />
             </Routes>
         </BrowserRouter>
