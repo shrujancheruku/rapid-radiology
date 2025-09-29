@@ -23,6 +23,8 @@ else:
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+print(DATABASE_URL)
+
 engine = create_engine(DATABASE_URL)
 
 
@@ -115,12 +117,15 @@ def upsert_template(
         return existing
     else:
         # Create new
-        template = ReportTemplate(user_id=user_id, report_type=template.report_type,
-                                  template_text=template.template_text)
-        session.add(template)
-        session.commit()
-        session.refresh(template)
-        return template
+        try:
+            template = ReportTemplate(user_id=user_id, report_type=template.report_type,
+                                      template_text=template.template_text)
+            session.add(template)
+            session.commit()
+            session.refresh(template)
+            return template
+        except Exception as e:
+            raise HTTPException(status_code=404, detail=str(e))
 
 
 # Read all templates for the current user
