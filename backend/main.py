@@ -71,7 +71,7 @@ app = FastAPI(
 )
 
 origins = [
-    "https://rapid-radiology-backend.onrender.com",
+    "https://rapid-radiology-frontend.onrender.com",
     "http://localhost:5173",
 ]
 
