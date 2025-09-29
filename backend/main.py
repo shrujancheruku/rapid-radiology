@@ -94,7 +94,7 @@ async def health():
     return {"status": "ok"}
 
 # Create or update template (upsert behavior)
-@app.post("/templates/", response_model=ApiReportTemplate)
+@app.post("/templates", response_model=ApiReportTemplate)
 def upsert_template(
         template: ApiReportTemplate,
         user_id: str = Depends(get_current_user),
@@ -114,7 +114,10 @@ def upsert_template(
         session.add(existing)
         session.commit()
         session.refresh(existing)
-        return existing
+        return ApiReportTemplate(
+            report_type=existing.report_type,
+            template_text=existing.template_text,
+        )
     else:
         # Create new
         try:
@@ -123,7 +126,10 @@ def upsert_template(
             session.add(template)
             session.commit()
             session.refresh(template)
-            return template
+            return ApiReportTemplate(
+                report_type=template.report_type,
+                template_text=template.template_text,
+            )
         except Exception as e:
             print(e)
             raise HTTPException(status_code=404, detail=str(e))

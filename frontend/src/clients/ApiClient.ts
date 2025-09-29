@@ -26,7 +26,7 @@ export class ApiClient {
 
     // Save a template
     async saveTemplate(report_type: ReportType, template_text: string) {
-        return this.client.post("/templates/", { report_type, template_text });
+        return this.client.post("/templates", { report_type, template_text });
     }
 
     // Generate a report using the OpenAI GPT-4 API
