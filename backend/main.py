@@ -125,6 +125,7 @@ def upsert_template(
             session.refresh(template)
             return template
         except Exception as e:
+            print(e)
             raise HTTPException(status_code=404, detail=str(e))
 
 
