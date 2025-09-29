@@ -1,6 +1,6 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { type AxiosInstance } from "axios";
 import type { Session } from "@supabase/supabase-js";
-import { ReportTemplate, ReportType } from "../types";
+import { type ReportTemplate, ReportType } from "../types";
 
 export class ApiClient {
     private client: AxiosInstance;

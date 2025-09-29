@@ -10,5 +10,4 @@ export interface ReportTemplate {
     template_text: string | null;
 }
 
-// derive all possible report types from enum values
 export const ALL_REPORT_TYPES: ReportType[] = Object.values(ReportType);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotifications } from "../contexts/NotificationContext";
-import { ReportTemplate, ReportType, ALL_REPORT_TYPES } from "../types";
+import { type ReportTemplate, ReportType } from "../types";
 import Layout from "../components/Layout";
 import LoadingPage from "./LoadingPage";
 import { ApiClient } from "../clients/ApiClient";
