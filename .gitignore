@@ -220,3 +220,4 @@ backend/supabase/
 backend/test.db
 backend/.env
 backend/test.db
+.DS_Store

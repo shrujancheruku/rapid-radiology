@@ -1,154 +1,213 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { useNotifications } from "../contexts/NotificationContext";
-import { type ReportTemplate, ReportType } from "../types";
-import Layout from "../components/Layout";
-import LoadingPage from "./LoadingPage";
-import { ApiClient } from "../clients/ApiClient";
+// src/pages/HomePage.tsx
+import {useEffect, useState} from "react";
+import {ApiClient} from "@/clients/apiClient";
+import {useAuth} from "@/contexts/AuthContext";
+import {ReportType} from "@/types";
+import Layout from "@/components/Layout";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Textarea} from "@/components/ui/textarea";
+import {Separator} from "@/components/ui/separator";
+import {Clipboard, Loader2} from "lucide-react";
+import {AnimatePresence, motion} from "framer-motion";
+import {useNavigate} from "react-router-dom";
+import LoadingPage from "@/pages/LoadingPage.tsx";
+import {toast} from "sonner";
+
+interface ReportTemplate {
+    report_type: ReportType;
+    template_text: string | null;
+}
 
 export default function HomePage() {
-    const { user, session } = useAuth();
-    const { addNotification } = useNotifications();
+    const {session} = useAuth();
     const [templates, setTemplates] = useState<ReportTemplate[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const [step1Selection, setStep1Selection] = useState<ReportType | null>(null);
-    const [radiologistInput, setRadiologistInput] = useState("");
-    const [step2Loading, setStep2Loading] = useState(false);
-    const [result, setResult] = useState<string | null>(null);
+    const [step, setStep] = useState(1);
+    const [selectedType, setSelectedType] = useState<ReportType | null>(null);
+    const [input, setInput] = useState("");
+    const [report, setReport] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+    const navigate = useNavigate();
 
     const api = new ApiClient(session);
 
-    // Fetch user templates
     useEffect(() => {
-        if (!user) return;
-        const fetchTemplates = async () => {
-            setLoading(true);
+        (async () => {
             try {
-                const data = await api.getTemplates();
-                setTemplates(data);
-            } catch (err: any) {
-                addNotification("Error fetching templates", "error");
+                const res = await api.getTemplates();
+                setTemplates(res);
+            } catch {
+                toast.error("Error loading templates");
             } finally {
                 setLoading(false);
             }
-        };
-        fetchTemplates();
-    }, [user]);
+        })();
+    }, []);
 
-    const handleSubmit = async () => {
-        if (!step1Selection || !radiologistInput) return;
-        setStep2Loading(true);
-
+    const handleGenerate = async () => {
+        if (!selectedType) return;
+        setSubmitting(true);
         try {
-            const generatedReport = await api.generateReport(step1Selection, radiologistInput);
-            setResult(generatedReport);
-        } catch (err: any) {
-            addNotification("Error generating report: " + err.message, "error");
+            const result = await api.generateReport(selectedType, input);
+            setReport(result);
+            setStep(3);
+        } catch {
+            toast.error("Failed to generate report");
         } finally {
-            setStep2Loading(false);
+            setSubmitting(false);
         }
     };
 
-    const handleRestart = () => {
-        setStep1Selection(null);
-        setRadiologistInput("");
-        setResult(null);
+    const reset = () => {
+        setStep(1);
+        setSelectedType(null);
+        setInput("");
+        setReport(null);
     };
 
-    if (loading) return <LoadingPage loading={loading} />;
+    if (loading) {
+        return (
+            <Layout>
+                <LoadingPage/>
+            </Layout>
+        );
+    }
 
     if (templates.length === 0) {
         return (
             <Layout>
-                <div className="p-6 text-center">
-                    <p className="mb-4 text-gray-700 dark:text-gray-300">
-                        You don’t have any templates yet.
-                    </p>
-                    <a
-                        href="/templates"
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                    >
-                        Go to Templates
-                    </a>
-                </div>
+                <Card className="max-w-lg mx-auto mt-10">
+                    <CardHeader>
+                        <CardTitle>No Templates Found</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p className="text-muted-foreground">
+                            You don’t have any templates yet. Please create some before generating reports.
+                        </p>
+                        <Button onClick={() => navigate("/templates")}>Go to Templates</Button>
+                    </CardContent>
+                </Card>
             </Layout>
         );
     }
 
     return (
         <Layout>
-            <div className="space-y-8 max-w-3xl mx-auto">
-                {/* Step 1: Select template */}
-                <div className="space-y-2">
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Step 1: Select Template</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {templates.map((t) => (
-                            <button
-                                key={t.report_type}
-                                onClick={() => setStep1Selection(t.report_type)}
-                                className={`px-4 py-2 rounded border transition ${
-                                    step1Selection === t.report_type
-                                        ? "bg-blue-500 text-white border-blue-500"
-                                        : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-600"
-                                }`}
-                            >
-                                {t.report_type}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Step 2: Radiologist Input */}
-                {step1Selection && (
-                    <div className="space-y-2 transition-all duration-500 ease-in-out">
-                        <hr className="border-gray-300 dark:border-gray-600" />
-                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Step 2: Radiologist Input</h2>
-                        <textarea
-                            value={radiologistInput}
-                            onChange={(e) => setRadiologistInput(e.target.value)}
-                            rows={5}
-                            className="w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-200 dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                        />
-                        <button
-                            onClick={handleSubmit}
-                            disabled={step2Loading}
-                            className={`px-4 py-2 rounded text-white transition ${
-                                step2Loading ? "bg-gray-400" : "bg-green-500 hover:bg-green-600"
-                            }`}
+            <div className="max-w-2xl mx-auto space-y-6 mt-6">
+                {/* Step 1 */}
+                <AnimatePresence>
+                    {step >= 1 && (
+                        <motion.div
+                            key="step1"
+                            initial={{opacity: 0, y: 20}}
+                            animate={{opacity: 1, y: 0}}
+                            exit={{opacity: 0, y: -20}}
+                            transition={{duration: 0.3}}
                         >
-                            {step2Loading ? "Generating..." : "Submit"}
-                        </button>
-                    </div>
-                )}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Step 1: Select a Report Type</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {templates.map((t) => (
+                                            <Button
+                                                key={t.report_type}
+                                                variant={selectedType === t.report_type ? "default" : "outline"}
+                                                onClick={() => {
+                                                    setSelectedType(t.report_type);
+                                                    setStep(2);
+                                                }}
+                                            >
+                                                {t.report_type}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                {/* Step 3: Result */}
-                {result && (
-                    <div className="space-y-2 transition-all duration-500 ease-in-out">
-                        <hr className="border-gray-300 dark:border-gray-600" />
-                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Step 3: Result</h2>
-                        <textarea
-                            value={result}
-                            readOnly
-                            rows={10}
-                            className="w-full p-2 border rounded resize-none focus:outline-none bg-gray-100 dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600"
-                        />
-                        <div className="flex space-x-2">
-                            <button
-                                onClick={() => result && navigator.clipboard.writeText(result)}
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                            >
-                                Copy to Clipboard
-                            </button>
-                            <button
-                                onClick={handleRestart}
-                                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
-                            >
-                                Restart
-                            </button>
-                        </div>
-                    </div>
-                )}
+                {step > 1 && <Separator/>}
+
+                {/* Step 2 */}
+                <AnimatePresence>
+                    {step >= 2 && selectedType && (
+                        <motion.div
+                            key="step2"
+                            initial={{opacity: 0, y: 20}}
+                            animate={{opacity: 1, y: 0}}
+                            exit={{opacity: 0, y: -20}}
+                            transition={{duration: 0.3}}
+                        >
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Step 2: Enter Findings</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <Textarea
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                        placeholder="Enter radiologist findings..."
+                                    />
+                                    <Button onClick={handleGenerate} disabled={submitting || !input}>
+                                        {submitting ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            "Generate Report"
+                                        )}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {step > 2 && <Separator/>}
+
+                {/* Step 3 */}
+                <AnimatePresence>
+                    {step === 3 && report && (
+                        <motion.div
+                            key="step3"
+                            initial={{opacity: 0, y: 20}}
+                            animate={{opacity: 1, y: 0}}
+                            exit={{opacity: 0, y: -20}}
+                            transition={{duration: 0.3}}
+                        >
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Step 3: Generated Report</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <Textarea value={report} readOnly className="h-64"/>
+                                    <div className="flex gap-2">
+
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(report);
+                                                toast.success("Copied report to clipboard!");
+                                            }}
+                                            className="flex items-center justify-start"
+                                        >
+                                            <Clipboard className="h-4 w-4"/>
+                                            Copy
+                                        </Button>
+                                        <Button onClick={reset}>
+                                            Start Over
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </Layout>
     );

@@ -1,7 +1,15 @@
 import {type ReactNode} from "react";
-import {useAuth} from "../contexts/AuthContext";
-import DarkModeToggle from "./DarkModeToggle";
-import {NavLink} from "react-router-dom";
+import {cn} from "@/lib/utils";
+import {Button} from "@/components/ui/button";
+import {Link} from "react-router-dom";
+import {useAuth} from "@/contexts/AuthContext";
+import {ModeToggle} from "@/components/ModeToggle";
+import {
+    NavigationMenu,
+    NavigationMenuItem,
+    NavigationMenuLink,
+    NavigationMenuList,
+} from "@/components/ui/navigation-menu";
 
 interface LayoutProps {
     children: ReactNode;
@@ -10,44 +18,45 @@ interface LayoutProps {
 export default function Layout({children}: LayoutProps) {
     const {logout} = useAuth();
 
-    const linkClasses = ({ isActive }: { isActive: boolean }) =>
-        `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-            isActive
-                ? "bg-blue-500 text-white dark:bg-blue-600"
-                : "text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-        }`;
+    const navItems = [
+        {label: "Home", to: "/"},
+        {label: "Templates", to: "/templates"},
+    ];
 
     return (
-        <div className="min-h-screen w-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
-            {/* Header */}
-            <header className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-xl font-bold">Rapid Radiology</h1>
-                    <nav className="mt-4 flex space-x-4">
-                        <NavLink to="/" end className={linkClasses}>
-                            Home
-                        </NavLink>
-                        <NavLink to="/templates" className={linkClasses}>
-                            Templates
-                        </NavLink>
-                    </nav>
-                    <div className="flex items-center space-x-3">
-                        <DarkModeToggle />
-                        <button
-                            onClick={logout}
-                            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-                        >
-                            Logout
-                        </button>
-                    </div>
+        <div className="flex flex-col min-h-screen w-screen bg-background text-foreground">
+            <nav className="flex items-center justify-between p-4 border-b border-border shadow-sm">
+                <h1 className="text-xl font-bold">Rapid Radiology</h1>
+
+                <div className="flex items-center space-x-2">
+                    <NavigationMenu>
+                        <NavigationMenuList className="flex space-x-2">
+                            {navItems.map((item) => (
+                                <NavigationMenuItem key={item.to}>
+                                    <NavigationMenuLink
+                                        asChild
+                                        className={cn(
+                                            "px-2 py-1",
+                                            window.location.pathname === item.to
+                                                ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                                                : ""
+                                        )}
+                                    >
+                                        <Link to={item.to}>{item.label}</Link>
+                                    </NavigationMenuLink>
+                                </NavigationMenuItem>
+                            ))}
+                        </NavigationMenuList>
+                    </NavigationMenu>
+
+                    <ModeToggle/>
+                    <Button variant="ghost" onClick={logout}>
+                        Logout
+                    </Button>
                 </div>
+            </nav>
 
-                {/* Navbar */}
-
-            </header>
-
-            {/* Page content */}
-            <main className="flex-1 p-6">{children}</main>
+            <main className={cn("flex-1 container mx-auto p-4")}>{children}</main>
         </div>
     );
 }

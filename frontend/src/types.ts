@@ -9,5 +9,3 @@ export interface ReportTemplate {
     report_type: ReportType;
     template_text: string | null;
 }
-
-export const ALL_REPORT_TYPES: ReportType[] = Object.values(ReportType);
