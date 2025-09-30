@@ -1,8 +1,8 @@
 """create templates table
 
-Revision ID: 6a330ce4a331
+Revision ID: cb35d95bb0a3
 Revises: 
-Create Date: 2025-09-30 00:43:44.512149
+Create Date: 2025-10-01 00:13:01.113170
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6a330ce4a331'
+revision: str = 'cb35d95bb0a3'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.create_table('reporttemplate',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('report_type', sa.Enum('CHEST_CT', 'ABDOMEN_CT', 'FOOT_MRI', 'SHOULDER_MRI', name='reporttype'), nullable=False),
+    sa.Column('report_type', sa.Enum('CT_CHEST', 'CT_ABDOMEN_PELVIS', 'CT_CHEST_ABDOMEN_PELVIS', 'CT_URINARY_TRACT', 'MRI_BRACHIAL_PLEXUS', 'MRI_ELBOW', 'MRI_FOOT', 'MRI_LEFT_HIP', 'MRI_RIGHT_HIP', 'MRI_KNEE', 'MRI_SHOULDER', 'MRI_CERVICAL_SPINE', 'MRI_THORACIC_SPINE', 'MRI_LUMBAR_SPINE', 'MRI_COCCYX', name='reporttype'), nullable=False),
     sa.Column('template_text', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id', 'report_type')
