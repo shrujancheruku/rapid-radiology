@@ -36,8 +36,8 @@ export default function LoginPage() {
     return (
         <div className="w-screen min-h-screen flex flex-col items-center justify-center px-4">
                 <div className="text-6xl flex items-center mb-12">
-                    <ScanEye size={60}/>
-                    <span>RapidRadiology</span>
+                    <ScanEye size={60} className='text-primary'/>
+                    <span className="text-secondary">RapidRadiology</span>
                 </div>
 
             <Card className="w-full max-w-sm">

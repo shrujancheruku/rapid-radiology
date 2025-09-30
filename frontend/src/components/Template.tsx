@@ -69,6 +69,7 @@ export default function Template({
                             />
                             <div className="flex space-x-2 items-center">
                                 <Button
+                                    variant='secondary'
                                     onClick={() => saveTemplate(reportType, localText)}
                                     disabled={saving}
                                 >

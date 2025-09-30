@@ -29,8 +29,8 @@ export default function Layout({ children }: LayoutProps) {
         <div className="flex flex-col min-h-screen w-screen bg-background text-foreground">
             <nav className="flex items-center justify-between p-4 border-b border-border shadow-sm">
                 <div className="flex items-center">
-                    <ScanEye/>
-                    <h1 className="text-xl">RapidRadiology</h1>
+                    <ScanEye className='text-primary'/>
+                    <h1 className="text-xl text-secondary">RapidRadiology</h1>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -60,7 +60,7 @@ export default function Layout({ children }: LayoutProps) {
 
                 <div className="flex items-center space-x-2">
                     <ModeToggle />
-                    <Button variant="ghost" onClick={logout}>
+                    <Button variant="secondary" onClick={logout}>
                         Logout
                     </Button>
                 </div>
