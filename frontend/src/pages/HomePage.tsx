@@ -7,8 +7,7 @@ import Layout from "@/components/Layout";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Textarea} from "@/components/ui/textarea";
-import {Separator} from "@/components/ui/separator";
-import {CheckCircle, Clipboard, Edit, FileText, Loader2} from "lucide-react";
+import {BotMessageSquare, Clipboard, Edit, FileText, Loader2, Sparkle} from "lucide-react";
 import {AnimatePresence, motion} from "framer-motion";
 import {useNavigate} from "react-router-dom";
 import LoadingPage from "@/pages/LoadingPage.tsx";
@@ -27,6 +26,7 @@ export default function HomePage() {
     const [selectedType, setSelectedType] = useState<ReportType | null>(null);
     const [input, setInput] = useState("");
     const [report, setReport] = useState<string | null>(null);
+    const [geminiReport, setGeminiReport] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
 
@@ -48,15 +48,19 @@ export default function HomePage() {
     const handleGenerate = async () => {
         if (!selectedType) return;
         setSubmitting(true);
-        try {
-            const result = await api.generateReport(selectedType, input);
-            setReport(result);
-            setStep(3);
-        } catch {
-            toast.error("Failed to generate report");
-        } finally {
-            setSubmitting(false);
-        }
+        setStep(3);
+
+        // Run both requests in parallel
+        api
+            .generateReport(selectedType, input)
+            .then((res) => setReport(res))
+            .catch(() => toast.error("Failed to generate report"));
+
+        api
+            .generateGeminiReport(selectedType, input)
+            .then((res) => setGeminiReport(res))
+            .catch(() => toast.error("Failed to generate Gemini report"))
+            .finally(() => setSubmitting(false));
     };
 
     const reset = () => {
@@ -64,6 +68,7 @@ export default function HomePage() {
         setSelectedType(null);
         setInput("");
         setReport(null);
+        setGeminiReport(null);
     };
 
     if (loading) {
@@ -83,12 +88,9 @@ export default function HomePage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p className="text-muted-foreground">
-                            You don’t have any templates yet. Please create some before
-                            generating reports.
+                            You don’t have any templates yet. Please create some before generating reports.
                         </p>
-                        <Button onClick={() => navigate("/templates")}>
-                            Go to Templates
-                        </Button>
+                        <Button onClick={() => navigate("/templates")}>Go to Templates</Button>
                     </CardContent>
                 </Card>
             </Layout>
@@ -97,7 +99,7 @@ export default function HomePage() {
 
     return (
         <Layout>
-            <div className="max-w-2xl mx-auto space-y-6 mt-6">
+            <div className="max-w-4xl mx-auto space-y-6 mt-6">
                 {/* Step 1 */}
                 <AnimatePresence>
                     {step >= 1 && (
@@ -118,9 +120,7 @@ export default function HomePage() {
                                         {templates.map((t) => (
                                             <Button
                                                 key={t.report_type}
-                                                variant={
-                                                    selectedType === t.report_type ? "default" : "outline"
-                                                }
+                                                variant={selectedType === t.report_type ? "default" : "outline"}
                                                 onClick={() => {
                                                     setSelectedType(t.report_type);
                                                     setStep(2);
@@ -135,8 +135,6 @@ export default function HomePage() {
                         </motion.div>
                     )}
                 </AnimatePresence>
-
-                {step > 1 && <Separator/>}
 
                 {/* Step 2 */}
                 <AnimatePresence>
@@ -160,14 +158,7 @@ export default function HomePage() {
                                         placeholder="Enter radiologist findings..."
                                     />
                                     <Button onClick={handleGenerate} disabled={submitting || !input}>
-                                        {submitting ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                                                Generating...
-                                            </>
-                                        ) : (
-                                            "Generate Report"
-                                        )}
+                                        Generate Reports
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -175,11 +166,9 @@ export default function HomePage() {
                     )}
                 </AnimatePresence>
 
-                {step > 2 && <Separator/>}
-
                 {/* Step 3 */}
                 <AnimatePresence>
-                    {step === 3 && report && (
+                    {step === 3 && (
                         <motion.div
                             key="step3"
                             initial={{opacity: 0, y: 20}}
@@ -187,29 +176,78 @@ export default function HomePage() {
                             exit={{opacity: 0, y: -20}}
                             transition={{duration: 0.3}}
                         >
-                            <Card>
-                                <CardHeader className="flex flex-row items-center gap-2">
-                                    <CheckCircle className="h-5 w-5 text-primary"/>
-                                    <CardTitle>Generated Report</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-3">
-                                    <Textarea value={report} readOnly className="h-64"/>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="secondary"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(report);
-                                                toast.success("Copied report to clipboard!");
-                                            }}
-                                            className="flex items-center justify-start"
-                                        >
-                                            <Clipboard className="h-4 w-4 mr-2"/>
-                                            Copy
-                                        </Button>
-                                        <Button onClick={reset}>Start Over</Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* OpenAI Report Card */}
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center gap-2">
+                                        <BotMessageSquare className="h-5 w-5 text-primary"/>
+                                        <CardTitle>OpenAI Report</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {report ? (
+                                            <>
+                                                <Textarea value={report} readOnly className="h-64"/>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="secondary"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(report);
+                                                            toast.success("Copied OpenAI report to clipboard!");
+                                                        }}
+                                                        className="flex items-center justify-start"
+                                                    >
+                                                        <Clipboard className="h-4 w-4 mr-2"/>
+                                                        Copy
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div
+                                                className="h-64 flex items-center justify-center text-muted-foreground">
+                                                <Loader2 className="h-6 w-6 animate-spin mr-2"/>
+                                                Generating OpenAI report...
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Gemini Report Card */}
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center gap-2">
+                                        <Sparkle className="h-5 w-5 text-primary"/>
+                                        <CardTitle>Gemini Report</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {geminiReport ? (
+                                            <>
+                                                <Textarea value={geminiReport} readOnly className="h-64"/>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="secondary"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(geminiReport);
+                                                            toast.success("Copied Gemini report to clipboard!");
+                                                        }}
+                                                        className="flex items-center justify-start"
+                                                    >
+                                                        <Clipboard className="h-4 w-4 mr-2"/>
+                                                        Copy
+                                                    </Button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div
+                                                className="h-64 flex items-center justify-center text-muted-foreground">
+                                                <Loader2 className="h-6 w-6 animate-spin mr-2"/>
+                                                Generating Gemini report...
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                            <div className='w-full flex justify-center items-center mt-4'>
+                                <Button onClick={reset}>Start Over</Button>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

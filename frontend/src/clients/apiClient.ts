@@ -38,4 +38,13 @@ export class ApiClient {
 
         return res.data.report_text;
     }
+
+    async generateGeminiReport(report_type: ReportType, radiologist_input: string): Promise<string> {
+        const res = await this.client.post<{ report_text: string }>("/generate-report-gemini", {
+            report_type,
+            radiologist_input
+        });
+
+        return res.data.report_text;
+    }
 }

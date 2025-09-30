@@ -34,7 +34,7 @@ export default function Template({
     const [localText, setLocalText] = useState(templateText || "");
 
     return (
-        <Card key={id}>
+        <Card key={id} className="py-4">
             <CardHeader
                 className="flex flex-row justify-between items-center cursor-pointer"
                 onClick={onToggle}
@@ -65,7 +65,7 @@ export default function Template({
                                     handleChange(reportType, e.target.value);
                                 }}
                                 placeholder="Enter template text..."
-                                className="min-h-[150px]"
+                                className="min-h-[200px]"
                             />
                             <div className="flex space-x-2 items-center">
                                 <Button

@@ -1,4 +1,5 @@
 import os
+import time
 from contextlib import asynccontextmanager
 from typing import List
 
@@ -8,6 +9,8 @@ from alembic.config import Config
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+from google import genai
+from google.genai import types
 from openai import OpenAI
 from sqlmodel import Session, select, create_engine
 
@@ -20,8 +23,7 @@ SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")  # from your Supabase pro
 DATABASE_URL = os.getenv("DATABASE_URL")  # Postgres connection string from Supabase
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-print(DATABASE_URL)
+gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 engine = create_engine(DATABASE_URL)
 
@@ -58,8 +60,9 @@ def run_migrations():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting up...")
-    print("run alembic upgrade head...")
-    run_migrations()
+    if ENV == "development":
+        print("run alembic upgrade head...")
+        run_migrations()
     yield
     print("Shutting down...")
 
@@ -220,38 +223,109 @@ async def generate_report(
 
     # --- GPT prompt template ---
     prompt = f"""
-    This GPT is designed to act as a radiology reporting assistant. 
-    It helps radiologists efficiently generate structured, professional MRI and CT reports by integrating the user’s described imaging findings into pre-defined reporting templates. 
+   You are acting as a radiology reporting assistant. 
+    You help radiologists efficiently generate structured, professional MRI and CT reports by integrating the user’s described imaging findings into pre-defined reporting templates. 
     Reports should contain only the 'Findings' section and omit the 'Impression' section. 
     Findings should be presented as concise structured lines in shorthand phrasing, styled like bullet points but without any bullet symbols. 
     Laterality should always be written out as 'left' and 'right' (not abbreviated). 
-    When a comparison study is provided, the first sentence of the report must read: 'Comparison is made to previous imaging dated [date].' If no comparison information is given, the first sentence must default to: 'No previous imaging available for comparison.' 
+    When a comparison study is provided with a date, the first sentence of the report must read: 'Comparison is made to previous imaging dated [date].' 
+    If no comparison information is given or if no date is present, the first sentence MUST default to: 'No previous imaging available for comparison and not 'Comparison is made to previous imaging dated [date].'
+    Either 'No previous imaging available for comparison or 'Comparison is made to previous imaging dated [date].' should be the first line of the report, with the date filled in if it's present in the radiologist's findings
     When the user provides normal reporting templates, the assistant should use these as the baseline structure. 
-    It must preserve every line of the normal template and only replace or modify the relevant lines where abnormalities are present, while leaving the rest unchanged. 
+    You must preserve every line of the normal template and only replace or modify the relevant lines where abnormalities are present, while leaving the rest unchanged.
+    Do not change order of findings in report.
     Normal statements must remain exactly as worded in the template unless replaced by an abnormality. For example, if the template reads 'No focal consolidation nor suspicious lung nodules' and the user states 'left lower lobe consolidation,' the assistant should output 'Left lower lobe consolidation. No suspicious lung nodules.' 
     The assistant must assimilate multiple abnormalities at once, placing each into the correct section of the template. 
     Output should always remain in plain text, with the full preserved template structure intact and no additional text before or after. 
     The assistant ensures correct medical terminology, structured format, and logical organization. It avoids guessing beyond the given information, but will fill in standard negative or normal statements where appropriate. If the findings are incomplete or ambiguous, it will make clear assumptions explicit. 
-    It should always produce clear, concise, and clinically appropriate reports in line with radiology standards.
+    You should always produce clear, concise, and clinically appropriate reports in line with radiology standards.
 
-    The template is:
+    The normal template is:
     {template.template_text}
 
-    and the description is:
+    and the described image findings are:
     {req.radiologist_input}
     """
 
     try:
+        start = time.perf_counter()
         response = client.responses.create(
-            model="gpt-5-mini",
+            model="gpt-5-nano",
             input=prompt,
             # temperature=0.2,
             max_output_tokens=10000
         )
-        # The Responses API returns structured output
-        # Here we assume text is in response.output_text
+        request_time = time.perf_counter() - start
+        print("OpenAI request completed in {0:.0f} seconds".format(request_time))
 
         report_text = response.output_text
+
+        return GenerateReportResponse(report_text=report_text)
+
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/generate-report-gemini", response_model=GenerateReportResponse)
+async def generate_report_gemini(
+        req: GenerateReportRequest,
+        user_id: str = Depends(get_current_user),
+        session: Session = Depends(get_session),
+):
+    template = session.exec(
+        select(ReportTemplate).where(
+            ReportTemplate.user_id == user_id,
+            ReportTemplate.report_type == req.report_type,
+        )
+    ).first()
+
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    if not template.template_text:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    # --- GPT prompt template ---
+    prompt = """
+    You are acting as a radiology reporting assistant. 
+    You help radiologists efficiently generate structured, professional MRI and CT reports by integrating the user’s described imaging findings into pre-defined reporting templates. 
+    Reports should contain only the 'Findings' section and omit the 'Impression' section. 
+    Findings should be presented as concise structured lines in shorthand phrasing, styled like bullet points but without any bullet symbols. 
+    Laterality should always be written out as 'left' and 'right' (not abbreviated). 
+    When a comparison study is provided with a date, the first sentence of the report must read: 'Comparison is made to previous imaging dated [date].' 
+    If no comparison information is given or if no date is present, the first sentence MUST default to: 'No previous imaging available for comparison and not 'Comparison is made to previous imaging dated [date].'
+    Either 'No previous imaging available for comparison or 'Comparison is made to previous imaging dated [date].' should be the first line of the report, with the date filled in if it's present in the radiologist's findings
+    When the user provides normal reporting templates, the assistant should use these as the baseline structure. 
+    You must preserve every line of the normal template and only replace or modify the relevant lines where abnormalities are present, while leaving the rest unchanged.
+    Do not change order of findings in report.
+    Normal statements must remain exactly as worded in the template unless replaced by an abnormality. For example, if the template reads 'No focal consolidation nor suspicious lung nodules' and the user states 'left lower lobe consolidation,' the assistant should output 'Left lower lobe consolidation. No suspicious lung nodules.' 
+    The assistant must assimilate multiple abnormalities at once, placing each into the correct section of the template. 
+    Output should always remain in plain text, with the full preserved template structure intact and no additional text before or after. 
+    The assistant ensures correct medical terminology, structured format, and logical organization. It avoids guessing beyond the given information, but will fill in standard negative or normal statements where appropriate. If the findings are incomplete or ambiguous, it will make clear assumptions explicit. 
+    You should always produce clear, concise, and clinically appropriate reports in line with radiology standards.
+    """
+
+    content = f""""
+    The normal template we're using is:
+    {template.template_text}
+
+    and the described image findings are:
+    {req.radiologist_input}
+    """
+
+    try:
+        start = time.perf_counter()
+        response = gemini_client.models.generate_content(
+            model="gemini-2.5-flash",
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                system_instruction=prompt,),
+            contents=content
+        )
+        request_time = time.perf_counter() - start
+        print("Gemini request completed in {0:.0f} seconds".format(request_time))
+        report_text = response.text
 
         return GenerateReportResponse(report_text=report_text)
 
