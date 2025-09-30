@@ -1,14 +1,22 @@
 // src/pages/LoginPage.tsx
-import {type FormEvent, useState} from "react";
-import {useAuth} from "../contexts/AuthContext";
-import {useNavigate} from "react-router-dom";
+import { type FormEvent, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-import {Button} from "@/components/ui/button";
-import {Input} from "@/components/ui/input";
-import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function LoginPage() {
-    const {login} = useAuth();
+    const { login } = useAuth();
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
@@ -37,43 +45,40 @@ export default function LoginPage() {
                 Rapid Radiology
             </h1>
 
-            <form
-                onSubmit={handleSubmit}
-                className="w-full max-w-sm space-y-6 bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md"
-            >
-                <div>
-                    <Input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        placeholder="Email"
-                    />
-                </div>
+            <Card className="w-full max-w-sm">
+                <form onSubmit={handleSubmit}>
+                    <CardContent className="space-y-4">
+                        <Input
+                            type="email"
+                            id="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            placeholder="Email"
+                        />
+                        <Input
+                            type="password"
+                            id="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            placeholder="Password"
+                        />
+                        {error && (
+                            <Alert variant="destructive">
+                                <AlertTitle>Login Error</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
+                    </CardContent>
 
-                <div>
-                    <Input
-                        type="password"
-                        id="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        placeholder="Password"
-                    />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Logging in..." : "Login"}
-                </Button>
-
-                {error && (
-                    <Alert variant="destructive">
-                        <AlertTitle>Login Error</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
-            </form>
+                    <CardFooter className='mt-4'>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                            {loading ? "Logging in..." : "Login"}
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Card>
         </div>
     );
 }
