@@ -35,9 +35,17 @@ export default function TemplatesPage() {
         setLoading(true);
         try {
             const res = await api.getTemplates();
-            setTemplates(
-                res.map((t) => ({...t, saving: false, error: null, success: false}))
-            );
+            // Merge existing templates with fetched ones to prevent flicker
+            setTemplates((prev) => {
+                const prevMap = Object.fromEntries(prev.map(t => [t.report_type, t]));
+                return res.map((t) => ({
+                    saving: prevMap[t.report_type]?.saving || false,
+                    error: prevMap[t.report_type]?.error || null,
+                    success: prevMap[t.report_type]?.success || false,
+                    template_text: prevMap[t.report_type]?.template_text ?? t.template_text,
+                    report_type: t.report_type,
+                }));
+            });
             setHasFetched(true);
         } catch {
             toast.error("Error fetching templates");
@@ -46,7 +54,6 @@ export default function TemplatesPage() {
         }
     }, [user, api]);
 
-    // Initial fetch
     useEffect(() => {
         if (!hasFetched) fetchTemplates();
     }, [hasFetched, fetchTemplates]);
@@ -66,6 +73,7 @@ export default function TemplatesPage() {
     const saveTemplate = async (report_type: ReportType, value: string) => {
         if (!user || !value) return;
 
+        // Optimistic save state
         setTemplates((prev) =>
             prev.map((t) =>
                 t.report_type === report_type ? {...t, saving: true, error: null} : t
@@ -74,17 +82,22 @@ export default function TemplatesPage() {
 
         try {
             await api.saveTemplate(report_type, value);
-            // toast.success(`${report_type} saved`);
 
-            // Trigger success animation
+            // Trigger tick animation
             setShowSuccessMap((prev) => ({...prev, [report_type]: true}));
 
             setTimeout(() => {
                 setShowSuccessMap((prev) => ({...prev, [report_type]: false}));
-            }, 2000); // tick visible for 2s
+            }, 2000);
 
-            // Refetch templates
-            await fetchTemplates();
+            // Merge updated template instead of replacing all templates
+            setTemplates((prev) =>
+                prev.map((t) =>
+                    t.report_type === report_type
+                        ? {...t, saving: false, success: true, template_text: value}
+                        : t
+                )
+            );
         } catch (err: any) {
             setTemplates((prev) =>
                 prev.map((t) =>
@@ -101,19 +114,15 @@ export default function TemplatesPage() {
     const addTemplate = async (report_type: ReportType) => {
         if (templates.find((t) => t.report_type === report_type)) return;
 
-        try {
-            const newTemplate: TemplateState = {
-                report_type,
-                template_text: "",
-                saving: false,
-                success: false,
-                error: null,
-            };
-            setTemplates((prev) => [...prev, newTemplate]);
-            setOpenTemplate(report_type); // auto-open the new one
-        } catch (err: any) {
-            toast.error(`Error adding ${report_type}: ${err.message}`);
-        }
+        const newTemplate: TemplateState = {
+            report_type,
+            template_text: "",
+            saving: false,
+            success: false,
+            error: null,
+        };
+        setTemplates((prev) => [...prev, newTemplate]);
+        setOpenTemplate(report_type);
     };
 
     const availableReportTypes = Object.values(ReportType).filter(
@@ -122,50 +131,48 @@ export default function TemplatesPage() {
 
     return (
         <Layout>
-            {loading && !templates && <LoadingPage />}
-            {!loading && (
-                <div className="space-y-6">
-                    {templates.map((template) => (
-                        <Template
-                            key={template.report_type}
-                            id={`template-${template.report_type}`}
-                            reportType={template.report_type}
-                            templateText={template.template_text}
-                            saving={template.saving}
-                            success={template.success}
-                            showSuccess={showSuccessMap[template.report_type] || false}
-                            error={template.error}
-                            handleChange={handleChange}
-                            saveTemplate={saveTemplate}
-                            isOpen={openTemplate === template.report_type}
-                            onToggle={() =>
-                                setOpenTemplate((prev) =>
-                                    prev === template.report_type ? null : template.report_type
-                                )
-                            }
-                        />
-                    ))}
+            {loading && templates.length === 0 && <LoadingPage />}
+            <div className="space-y-6">
+                {templates.map((template) => (
+                    <Template
+                        key={template.report_type}
+                        id={`template-${template.report_type}`}
+                        reportType={template.report_type}
+                        templateText={template.template_text}
+                        saving={template.saving}
+                        success={template.success}
+                        showSuccess={showSuccessMap[template.report_type] || false}
+                        error={template.error}
+                        handleChange={handleChange}
+                        saveTemplate={saveTemplate}
+                        isOpen={openTemplate === template.report_type}
+                        onToggle={() =>
+                            setOpenTemplate((prev) =>
+                                prev === template.report_type ? null : template.report_type
+                            )
+                        }
+                    />
+                ))}
 
-                    {availableReportTypes.length > 0 && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button className="w-56">Create New Template</Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56">
-                                {availableReportTypes.map((rt) => (
-                                    <DropdownMenuItem
-                                        key={rt}
-                                        onClick={() => addTemplate(rt)}
-                                        className="cursor-pointer"
-                                    >
-                                        {rt}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
-                </div>
-            )}
+                {availableReportTypes.length > 0 && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button className="w-56">Create New Template</Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56">
+                            {availableReportTypes.map((rt) => (
+                                <DropdownMenuItem
+                                    key={rt}
+                                    onClick={() => addTemplate(rt)}
+                                    className="cursor-pointer"
+                                >
+                                    {rt}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+            </div>
         </Layout>
     );
 }
