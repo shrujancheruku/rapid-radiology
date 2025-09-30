@@ -1,22 +1,15 @@
 // src/pages/LoginPage.tsx
-import { type FormEvent, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import {type FormEvent, useState} from "react";
+import {useAuth} from "../contexts/AuthContext";
+import {useNavigate} from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Card, CardContent, CardFooter,} from "@/components/ui/card";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 export default function LoginPage() {
-    const { login } = useAuth();
+    const {login} = useAuth();
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
