@@ -5,8 +5,7 @@ import {type ReportTemplate, ReportType} from "@/types";
 import Layout from "@/components/Layout";
 import Template from "@/components/Template";
 import LoadingPage from "@/pages/LoadingPage";
-
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "@/components/ui/dropdown-menu";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {toast} from "sonner";
 
@@ -24,9 +23,12 @@ export default function TemplatesPage() {
     const [openTemplate, setOpenTemplate] = useState<ReportType | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
 
+    // Animation state managed at page level
+    const [showSuccessMap, setShowSuccessMap] = useState<Record<string, boolean>>({});
+
     const api = new ApiClient(session);
 
-    // Function to fetch templates
+    // Fetch templates
     const fetchTemplates = useCallback(async () => {
         if (!user) return;
 
@@ -44,14 +46,12 @@ export default function TemplatesPage() {
         }
     }, [user, api]);
 
-    // Initial fetch (once per session)
+    // Initial fetch
     useEffect(() => {
-        if (!hasFetched) {
-            fetchTemplates();
-        }
+        if (!hasFetched) fetchTemplates();
     }, [hasFetched, fetchTemplates]);
 
-    // Handle template text change locally
+    // Handle text change locally
     const handleChange = (report_type: ReportType, value: string) => {
         setTemplates((prev) =>
             prev.map((t) =>
@@ -62,7 +62,7 @@ export default function TemplatesPage() {
         );
     };
 
-    // Save template and refetch
+    // Save template
     const saveTemplate = async (report_type: ReportType, value: string) => {
         if (!user || !value) return;
 
@@ -74,8 +74,17 @@ export default function TemplatesPage() {
 
         try {
             await api.saveTemplate(report_type, value);
-            toast.success(`${report_type} saved`);
-            await fetchTemplates(); // refetch after save
+            // toast.success(`${report_type} saved`);
+
+            // Trigger success animation
+            setShowSuccessMap((prev) => ({...prev, [report_type]: true}));
+
+            setTimeout(() => {
+                setShowSuccessMap((prev) => ({...prev, [report_type]: false}));
+            }, 2000); // tick visible for 2s
+
+            // Refetch templates
+            await fetchTemplates();
         } catch (err: any) {
             setTemplates((prev) =>
                 prev.map((t) =>
@@ -88,7 +97,7 @@ export default function TemplatesPage() {
         }
     };
 
-    // Add new template and refetch
+    // Add new template
     const addTemplate = async (report_type: ReportType) => {
         if (templates.find((t) => t.report_type === report_type)) return;
 
@@ -113,7 +122,7 @@ export default function TemplatesPage() {
 
     return (
         <Layout>
-            {loading && <LoadingPage/>}
+            {loading && !templates && <LoadingPage />}
             {!loading && (
                 <div className="space-y-6">
                     {templates.map((template) => (
@@ -124,6 +133,7 @@ export default function TemplatesPage() {
                             templateText={template.template_text}
                             saving={template.saving}
                             success={template.success}
+                            showSuccess={showSuccessMap[template.report_type] || false}
                             error={template.error}
                             handleChange={handleChange}
                             saveTemplate={saveTemplate}
@@ -136,7 +146,6 @@ export default function TemplatesPage() {
                         />
                     ))}
 
-                    {/* Add new template dropdown */}
                     {availableReportTypes.length > 0 && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

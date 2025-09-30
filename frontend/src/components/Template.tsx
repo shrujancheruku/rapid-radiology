@@ -1,8 +1,8 @@
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Textarea} from "@/components/ui/textarea";
-import {ChevronDown, Loader2} from "lucide-react";
+import {ChevronDown, Loader2, Check, X} from "lucide-react";
 import {AnimatePresence, motion} from "framer-motion";
 import {ReportType} from "@/types";
 
@@ -12,6 +12,7 @@ interface TemplateProps {
     templateText: string | null;
     saving: boolean;
     success: boolean;
+    showSuccess?: boolean; // page-level state
     error: string | null;
     handleChange: (reportType: ReportType, value: string) => void;
     saveTemplate: (reportType: ReportType, value: string) => void;
@@ -25,6 +26,7 @@ export default function Template({
                                      templateText,
                                      saving,
                                      success,
+                                     showSuccess = false,
                                      error,
                                      handleChange,
                                      saveTemplate,
@@ -32,6 +34,10 @@ export default function Template({
                                      onToggle,
                                  }: TemplateProps) {
     const [localText, setLocalText] = useState(templateText || "");
+
+    useEffect(() => {
+        setLocalText(templateText || "");
+    }, [templateText]);
 
     return (
         <Card key={id} className="py-4">
@@ -41,13 +47,10 @@ export default function Template({
             >
                 <CardTitle className="text-lg font-medium">{reportType}</CardTitle>
                 <ChevronDown
-                    className={`h-5 w-5 transition-transform ${
-                        isOpen ? "rotate-180" : ""
-                    }`}
+                    className={`h-5 w-5 transition-transform ${isOpen ? "rotate-180" : ""}`}
                 />
             </CardHeader>
 
-            {/* AnimatePresence ensures smooth exit */}
             <AnimatePresence initial={false}>
                 {isOpen && (
                     <motion.div
@@ -67,25 +70,63 @@ export default function Template({
                                 placeholder="Enter template text..."
                                 className="min-h-[200px]"
                             />
-                            <div className="flex space-x-2 items-center">
+
+                            <div className="flex items-center space-x-2 relative">
+                                {/* Save button */}
                                 <Button
-                                    variant='secondary'
+                                    variant="secondary"
                                     onClick={() => saveTemplate(reportType, localText)}
                                     disabled={saving}
                                 >
-                                    {saving ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        "Save"
-                                    )}
+                                    Save
                                 </Button>
-                                {success && (
-                                    <span className="text-green-600 text-sm">Saved!</span>
-                                )}
-                                {error && <span className="text-red-600 text-sm">{error}</span>}
+
+                                {/* Loader / Tick / Error container */}
+                                <div className="relative w-7 h-7">
+                                    <AnimatePresence>
+                                        {/* Loader */}
+                                        {saving && (
+                                            <motion.div
+                                                key="loader"
+                                                initial={{opacity: 0, scale: 0.5}}
+                                                animate={{opacity: 1, scale: 1}}
+                                                exit={{opacity: 0, scale: 0.5}}
+                                                transition={{duration: 0.2}}
+                                                className="absolute top-0 left-0"
+                                            >
+                                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                            </motion.div>
+                                        )}
+
+                                        {/* Tick inside a circle */}
+                                        {showSuccess && !saving && (
+                                            <motion.div
+                                                key="success"
+                                                initial={{opacity: 0, scale: 0.3}}
+                                                animate={{opacity: 1, scale: 1}}
+                                                exit={{opacity: 0, scale: 0.3}}
+                                                transition={{duration: 0.3}}
+                                                className="absolute top-0 left-0 flex items-center justify-center w-6 h-6 rounded-full bg-accent"
+                                            >
+                                                <Check className="h-4 w-4 text-primary" />
+                                            </motion.div>
+                                        )}
+
+                                        {/* Error cross inside a circle */}
+                                        {error && !saving && (
+                                            <motion.div
+                                                key="error"
+                                                initial={{opacity: 0, scale: 0.3}}
+                                                animate={{opacity: 1, scale: 1}}
+                                                exit={{opacity: 0, scale: 0.3}}
+                                                transition={{duration: 0.3}}
+                                                className="absolute top-0 left-0 flex items-center justify-center w-6 h-6 rounded-full bg-red-100"
+                                            >
+                                                <X className="h-4 w-4 text-red-600" />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             </div>
                         </CardContent>
                     </motion.div>
