@@ -9,7 +9,7 @@ import {
 import { useTheme } from "@/contexts/ThemeProvider";
 
 export function ModeToggle() {
-    const { theme, setTheme } = useTheme();
+    const { setTheme } = useTheme();
 
     return (
         <DropdownMenu>

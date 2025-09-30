@@ -1,18 +1,13 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { ApiClient } from "@/clients/ApiClient";
-import { type ReportTemplate, ReportType } from "@/types";
+import {useEffect, useState} from "react";
+import {useAuth} from "@/contexts/AuthContext";
+import {ApiClient} from "@/clients/apiClient";
+import {type ReportTemplate, ReportType} from "@/types";
 import Layout from "@/components/Layout";
 import Template from "@/components/Template";
 import LoadingPage from "@/pages/LoadingPage";
 
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "@/components/ui/dropdown-menu";
+import {Button} from "@/components/ui/button";
 import {toast} from "sonner";
 
 interface TemplateState extends ReportTemplate {
@@ -22,7 +17,7 @@ interface TemplateState extends ReportTemplate {
 }
 
 export default function TemplatesPage() {
-    const { user, session } = useAuth();
+    const {user, session} = useAuth();
 
     const [templates, setTemplates] = useState<TemplateState[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,7 +31,7 @@ export default function TemplatesPage() {
             try {
                 const res = await api.getTemplates();
                 setTemplates(
-                    res.map((t) => ({ ...t, saving: false, error: null, success: false }))
+                    res.map((t) => ({...t, saving: false, error: null, success: false}))
                 );
             } catch {
                 toast.error("Error fetching templates");
@@ -51,7 +46,7 @@ export default function TemplatesPage() {
         setTemplates((prev) =>
             prev.map((t) =>
                 t.report_type === report_type
-                    ? { ...t, template_text: value, success: false, error: null }
+                    ? {...t, template_text: value, success: false, error: null}
                     : t
             )
         );
@@ -61,7 +56,7 @@ export default function TemplatesPage() {
         if (!user || !value) return;
         setTemplates((prev) =>
             prev.map((t) =>
-                t.report_type === report_type ? { ...t, saving: true, error: null } : t
+                t.report_type === report_type ? {...t, saving: true, error: null} : t
             )
         );
 
@@ -69,7 +64,7 @@ export default function TemplatesPage() {
             await api.saveTemplate(report_type, value);
             setTemplates((prev) =>
                 prev.map((t) =>
-                    t.report_type === report_type ? { ...t, saving: false, success: true } : t
+                    t.report_type === report_type ? {...t, saving: false, success: true} : t
                 )
             );
             toast.success(`${report_type} saved`);
@@ -77,7 +72,7 @@ export default function TemplatesPage() {
             setTemplates((prev) =>
                 prev.map((t) =>
                     t.report_type === report_type
-                        ? { ...t, saving: false, error: err.message }
+                        ? {...t, saving: false, error: err.message}
                         : t
                 )
             );
@@ -106,7 +101,7 @@ export default function TemplatesPage() {
 
     return (
         <Layout>
-            {loading && <LoadingPage loading={loading} />}
+            {loading && <LoadingPage/>}
             {!loading && (
                 <div className="space-y-6">
                     {templates.map((template) => (

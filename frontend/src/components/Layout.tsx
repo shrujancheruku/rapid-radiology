@@ -1,7 +1,7 @@
-import {ReactNode} from "react";
+import {type ReactNode} from "react";
 import {cn} from "@/lib/utils";
 import {Button} from "@/components/ui/button";
-import {Link, useNavigate} from "react-router-dom";
+import {Link} from "react-router-dom";
 import {useAuth} from "@/contexts/AuthContext";
 import {ModeToggle} from "@/components/ModeToggle";
 import {
@@ -16,7 +16,6 @@ interface LayoutProps {
 }
 
 export default function Layout({children}: LayoutProps) {
-    const navigate = useNavigate();
     const {logout} = useAuth();
 
     const navItems = [

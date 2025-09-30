@@ -7,6 +7,7 @@ import {AnimatePresence, motion} from "framer-motion";
 import {ReportType} from "@/types";
 
 interface TemplateProps {
+    id: string;
     reportType: ReportType;
     templateText: string | null;
     saving: boolean;
@@ -19,6 +20,7 @@ interface TemplateProps {
 }
 
 export default function Template({
+                                     id,
                                      reportType,
                                      templateText,
                                      saving,
@@ -32,7 +34,7 @@ export default function Template({
     const [localText, setLocalText] = useState(templateText || "");
 
     return (
-        <Card className=''>
+        <Card key={id}>
             <CardHeader
                 className="flex flex-row justify-between items-center cursor-pointer"
                 onClick={onToggle}
