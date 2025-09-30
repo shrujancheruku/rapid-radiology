@@ -319,7 +319,7 @@ async def generate_report_gemini(
         response = gemini_client.models.generate_content(
             model="gemini-2.5-flash",
             config=types.GenerateContentConfig(
-                temperature=0.2,
+                temperature=0.1,
                 system_instruction=prompt,),
             contents=content
         )
