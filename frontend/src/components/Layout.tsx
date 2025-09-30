@@ -26,7 +26,7 @@ export default function Layout({children}: LayoutProps) {
     return (
         <div className="flex flex-col min-h-screen w-screen bg-background text-foreground">
             <nav className="flex items-center justify-between p-4 border-b border-border shadow-sm">
-                <h1 className="text-xl font-bold">Rapid Radiology</h1>
+                <h1 className="text-xl">Rapid Radiology</h1>
 
                 <div className="flex items-center space-x-2">
                     <NavigationMenu>
@@ -36,10 +36,10 @@ export default function Layout({children}: LayoutProps) {
                                     <NavigationMenuLink
                                         asChild
                                         className={cn(
-                                            "px-2 py-1",
+                                            "group inline-flex items-center justify-center transition-colors focus:outline-none no-underline",
                                             window.location.pathname === item.to
-                                                ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-                                                : ""
+                                                ? "bg-primary text-background hover:bg-primary"
+                                                : "text-foreground/80 hover:text-foreground"
                                         )}
                                     >
                                         <Link to={item.to}>{item.label}</Link>
@@ -48,8 +48,10 @@ export default function Layout({children}: LayoutProps) {
                             ))}
                         </NavigationMenuList>
                     </NavigationMenu>
-
+                </div>
+                <div className="flex items-center space-x-2">
                     <ModeToggle/>
+
                     <Button variant="ghost" onClick={logout}>
                         Logout
                     </Button>
