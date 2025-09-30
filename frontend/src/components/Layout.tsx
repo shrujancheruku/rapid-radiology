@@ -10,6 +10,7 @@ import {
     NavigationMenuLink,
     NavigationMenuList,
 } from "@/components/ui/navigation-menu";
+import {ScanEye} from "lucide-react";
 
 interface LayoutProps {
     children: ReactNode;
@@ -27,7 +28,10 @@ export default function Layout({ children }: LayoutProps) {
     return (
         <div className="flex flex-col min-h-screen w-screen bg-background text-foreground">
             <nav className="flex items-center justify-between p-4 border-b border-border shadow-sm">
-                <h1 className="text-xl">Rapid Radiology</h1>
+                <div className="flex items-center">
+                    <ScanEye/>
+                    <h1 className="text-xl">RapidRadiology</h1>
+                </div>
 
                 <div className="flex items-center space-x-2">
                     <NavigationMenu>

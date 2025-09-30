@@ -7,6 +7,7 @@ import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Card, CardContent, CardFooter,} from "@/components/ui/card";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {ScanEye} from "lucide-react";
 
 export default function LoginPage() {
     const {login} = useAuth();
@@ -34,9 +35,10 @@ export default function LoginPage() {
 
     return (
         <div className="w-screen min-h-screen flex flex-col items-center justify-center px-4">
-            <h1 className="text-6xl font-bold text-center text-gray-900 dark:text-gray-100 mb-12">
-                Rapid Radiology
-            </h1>
+                <div className="text-6xl flex items-center mb-12">
+                    <ScanEye size={60}/>
+                    <span>RapidRadiology</span>
+                </div>
 
             <Card className="w-full max-w-sm">
                 <form onSubmit={handleSubmit}>
