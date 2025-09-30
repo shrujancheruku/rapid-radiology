@@ -8,7 +8,7 @@ import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Textarea} from "@/components/ui/textarea";
 import {Separator} from "@/components/ui/separator";
-import {Clipboard, Loader2} from "lucide-react";
+import {CheckCircle, Clipboard, Edit, FileText, Loader2} from "lucide-react";
 import {AnimatePresence, motion} from "framer-motion";
 import {useNavigate} from "react-router-dom";
 import LoadingPage from "@/pages/LoadingPage.tsx";
@@ -83,9 +83,12 @@ export default function HomePage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <p className="text-muted-foreground">
-                            You don’t have any templates yet. Please create some before generating reports.
+                            You don’t have any templates yet. Please create some before
+                            generating reports.
                         </p>
-                        <Button onClick={() => navigate("/templates")}>Go to Templates</Button>
+                        <Button onClick={() => navigate("/templates")}>
+                            Go to Templates
+                        </Button>
                     </CardContent>
                 </Card>
             </Layout>
@@ -106,15 +109,18 @@ export default function HomePage() {
                             transition={{duration: 0.3}}
                         >
                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Step 1: Select a Report Type</CardTitle>
+                                <CardHeader className="flex flex-row items-center gap-2">
+                                    <FileText className="h-5 w-5 text-primary"/>
+                                    <CardTitle>Select a Report Type</CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="grid grid-cols-2 gap-3">
                                         {templates.map((t) => (
                                             <Button
                                                 key={t.report_type}
-                                                variant={selectedType === t.report_type ? "default" : "outline"}
+                                                variant={
+                                                    selectedType === t.report_type ? "default" : "outline"
+                                                }
                                                 onClick={() => {
                                                     setSelectedType(t.report_type);
                                                     setStep(2);
@@ -143,8 +149,9 @@ export default function HomePage() {
                             transition={{duration: 0.3}}
                         >
                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Step 2: Enter Findings</CardTitle>
+                                <CardHeader className="flex flex-row items-center gap-2">
+                                    <Edit className="h-5 w-5 text-primary"/>
+                                    <CardTitle>Enter Findings</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     <Textarea
@@ -181,13 +188,13 @@ export default function HomePage() {
                             transition={{duration: 0.3}}
                         >
                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Step 3: Generated Report</CardTitle>
+                                <CardHeader className="flex flex-row items-center gap-2">
+                                    <CheckCircle className="h-5 w-5 text-primary"/>
+                                    <CardTitle>Generated Report</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     <Textarea value={report} readOnly className="h-64"/>
                                     <div className="flex gap-2">
-
                                         <Button
                                             variant="secondary"
                                             onClick={() => {
@@ -196,12 +203,10 @@ export default function HomePage() {
                                             }}
                                             className="flex items-center justify-start"
                                         >
-                                            <Clipboard className="h-4 w-4"/>
+                                            <Clipboard className="h-4 w-4 mr-2"/>
                                             Copy
                                         </Button>
-                                        <Button onClick={reset}>
-                                            Start Over
-                                        </Button>
+                                        <Button onClick={reset}>Start Over</Button>
                                     </div>
                                 </CardContent>
                             </Card>
