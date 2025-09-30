@@ -8,6 +8,7 @@ import LoadingPage from "@/pages/LoadingPage";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {toast} from "sonner";
+import {AnimatePresence, motion} from "framer-motion";
 
 interface TemplateState extends ReportTemplate {
     saving: boolean;
@@ -129,50 +130,62 @@ export default function TemplatesPage() {
         (rt) => !templates.some((t) => t.report_type === rt)
     );
 
+    if (loading && templates.length === 0)
+        return <Layout><LoadingPage/></Layout>
+
     return (
         <Layout>
-            {loading && templates.length === 0 && <LoadingPage />}
-            <div className="space-y-6">
-                {templates.map((template) => (
-                    <Template
-                        key={template.report_type}
-                        id={`template-${template.report_type}`}
-                        reportType={template.report_type}
-                        templateText={template.template_text}
-                        saving={template.saving}
-                        success={template.success}
-                        showSuccess={showSuccessMap[template.report_type] || false}
-                        error={template.error}
-                        handleChange={handleChange}
-                        saveTemplate={saveTemplate}
-                        isOpen={openTemplate === template.report_type}
-                        onToggle={() =>
-                            setOpenTemplate((prev) =>
-                                prev === template.report_type ? null : template.report_type
-                            )
-                        }
-                    />
-                ))}
+            <AnimatePresence>
+                <motion.div
+                    key="templates"
+                    initial={{opacity: 0, y: 0}}
+                    animate={{opacity: 1, y: 0}}
+                    exit={{opacity: 0, y: 0}}
+                    transition={{duration: 1}}
+                >
+                    <div className="space-y-6">
+                        {templates.map((template) => (
+                            <Template
+                                key={template.report_type}
+                                id={`template-${template.report_type}`}
+                                reportType={template.report_type}
+                                templateText={template.template_text}
+                                saving={template.saving}
+                                success={template.success}
+                                showSuccess={showSuccessMap[template.report_type] || false}
+                                error={template.error}
+                                handleChange={handleChange}
+                                saveTemplate={saveTemplate}
+                                isOpen={openTemplate === template.report_type}
+                                onToggle={() =>
+                                    setOpenTemplate((prev) =>
+                                        prev === template.report_type ? null : template.report_type
+                                    )
+                                }
+                            />
+                        ))}
 
-                {availableReportTypes.length > 0 && (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button className="w-56">Create New Template</Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56">
-                            {availableReportTypes.map((rt) => (
-                                <DropdownMenuItem
-                                    key={rt}
-                                    onClick={() => addTemplate(rt)}
-                                    className="cursor-pointer"
-                                >
-                                    {rt}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )}
-            </div>
+                        {availableReportTypes.length > 0 && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button className="w-56">Create New Template</Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56">
+                                    {availableReportTypes.map((rt) => (
+                                        <DropdownMenuItem
+                                            key={rt}
+                                            onClick={() => addTemplate(rt)}
+                                            className="cursor-pointer"
+                                        >
+                                            {rt}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+                    </div>
+                </motion.div>
+            </AnimatePresence>
         </Layout>
     );
 }

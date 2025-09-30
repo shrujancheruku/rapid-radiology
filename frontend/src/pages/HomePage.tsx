@@ -105,10 +105,10 @@ export default function HomePage() {
                     {step >= 1 && (
                         <motion.div
                             key="step1"
-                            initial={{opacity: 0, y: 20}}
+                            initial={{opacity: 0, y: 0}}
                             animate={{opacity: 1, y: 0}}
-                            exit={{opacity: 0, y: -20}}
-                            transition={{duration: 0.3}}
+                            exit={{opacity: 0, y: 0}}
+                            transition={{duration: 1}}
                         >
                             <Card>
                                 <CardHeader className="flex flex-row items-center gap-2">
