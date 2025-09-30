@@ -1,7 +1,12 @@
-import type {ReportType} from "../types.ts";
+import {useState} from "react";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import {Textarea} from "@/components/ui/textarea";
+import {ChevronDown, Loader2} from "lucide-react";
+import {AnimatePresence, motion} from "framer-motion";
+import {ReportType} from "@/types";
 
 interface TemplateProps {
-    id?: string;
     reportType: ReportType;
     templateText: string | null;
     saving: boolean;
@@ -9,12 +14,11 @@ interface TemplateProps {
     error: string | null;
     handleChange: (reportType: ReportType, value: string) => void;
     saveTemplate: (reportType: ReportType, value: string) => void;
-    isOpen: boolean; // controlled prop
-    onToggle: () => void; // called when header is clicked
+    isOpen: boolean;
+    onToggle: () => void;
 }
 
 export default function Template({
-                                     id,
                                      reportType,
                                      templateText,
                                      saving,
@@ -23,53 +27,67 @@ export default function Template({
                                      handleChange,
                                      saveTemplate,
                                      isOpen,
-                                     onToggle
+                                     onToggle,
                                  }: TemplateProps) {
+    const [localText, setLocalText] = useState(templateText || "");
 
     return (
-        <div id={id} className="mb-4 rounded shadow-sm bg-gray-300 dark:bg-gray-800">
-            <div
-                className="cursor-pointer p-4 flex justify-between items-center"
-                onClick={onToggle} // delegate toggle to parent
+        <Card className=''>
+            <CardHeader
+                className="flex flex-row justify-between items-center cursor-pointer"
+                onClick={onToggle}
             >
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{reportType}</h3>
-                <span
-                    className="text-gray-600 dark:text-gray-300 transition-transform duration-300"
-                    style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                >
-                    ▼
-                </span>
-            </div>
+                <CardTitle className="text-lg font-medium">{reportType}</CardTitle>
+                <ChevronDown
+                    className={`h-5 w-5 transition-transform ${
+                        isOpen ? "rotate-180" : ""
+                    }`}
+                />
+            </CardHeader>
 
-            <div
-                style={{
-                    maxHeight: isOpen ? 500 : 0,
-                    transition: "max-height 0.3s ease",
-                    overflow: "hidden",
-                }}
-            >
+            {/* AnimatePresence ensures smooth exit */}
+            <AnimatePresence initial={false}>
                 {isOpen && (
-                    <div className="px-4 py-2">
-                        <textarea
-                            value={templateText || ""}
-                            onChange={(e) => handleChange(reportType, e.target.value)}
-                            rows={5}
-                            className="w-full p-2 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-200 dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                        />
-                        <div className="mt-2 flex items-center space-x-2">
-                            <button
-                                onClick={() => saveTemplate(reportType, templateText || "")}
-                                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-                            >
-                                Save
-                            </button>
-                            {saving && <span className="text-gray-500 dark:text-gray-300 font-medium">Saving...</span>}
-                            {success && <span className="text-green-600 dark:text-green-500 font-medium">Saved!</span>}
-                            {error && <span className="text-red-500 font-medium">{error}</span>}
-                        </div>
-                    </div>
+                    <motion.div
+                        key="content"
+                        initial={{height: 0, opacity: 0}}
+                        animate={{height: "auto", opacity: 1}}
+                        exit={{height: 0, opacity: 0}}
+                        transition={{duration: 0.3, ease: "easeInOut"}}
+                    >
+                        <CardContent className="space-y-4">
+                            <Textarea
+                                value={localText}
+                                onChange={(e) => {
+                                    setLocalText(e.target.value);
+                                    handleChange(reportType, e.target.value);
+                                }}
+                                placeholder="Enter template text..."
+                                className="min-h-[150px]"
+                            />
+                            <div className="flex space-x-2 items-center">
+                                <Button
+                                    onClick={() => saveTemplate(reportType, localText)}
+                                    disabled={saving}
+                                >
+                                    {saving ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        "Save"
+                                    )}
+                                </Button>
+                                {success && (
+                                    <span className="text-green-600 text-sm">Saved!</span>
+                                )}
+                                {error && <span className="text-red-600 text-sm">{error}</span>}
+                            </div>
+                        </CardContent>
+                    </motion.div>
                 )}
-            </div>
-        </div>
+            </AnimatePresence>
+        </Card>
     );
 }

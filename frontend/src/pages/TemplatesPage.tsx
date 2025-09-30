@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { useNotifications } from "../contexts/NotificationContext";
-import { ALL_REPORT_TYPES, type ReportTemplate, ReportType } from "../types";
-import Layout from "../components/Layout";
-import Template from "../components/Template";
-import { ApiClient } from "../clients/ApiClient";
+import { useAuth } from "@/contexts/AuthContext";
+import { ApiClient } from "@/clients/ApiClient";
+import { type ReportTemplate, ReportType } from "@/types";
+import Layout from "@/components/Layout";
+import Template from "@/components/Template";
+import LoadingPage from "@/pages/LoadingPage";
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import {toast} from "sonner";
 
 interface TemplateState extends ReportTemplate {
     saving: boolean;
@@ -14,32 +23,42 @@ interface TemplateState extends ReportTemplate {
 
 export default function TemplatesPage() {
     const { user, session } = useAuth();
-    const { addNotification } = useNotifications();
 
     const [templates, setTemplates] = useState<TemplateState[]>([]);
     const [loading, setLoading] = useState(true);
     const [openTemplate, setOpenTemplate] = useState<ReportType | null>(null);
-    const [showDropdown, setShowDropdown] = useState(false);
 
-    const apiClient = new ApiClient(session);
+    const api = new ApiClient(session);
 
-    const fetchTemplates = async () => {
+    useEffect(() => {
         if (!user) return;
-        try {
-            const data = await apiClient.getTemplates();
-            setTemplates(
-                data.map((t) => ({ ...t, saving: false, success: false, error: null }))
-            );
-        } catch (err: any) {
-            addNotification("Error fetching templates", "error");
-        } finally {
-            setLoading(false);
-        }
+        const fetchTemplates = async () => {
+            try {
+                const res = await api.getTemplates();
+                setTemplates(
+                    res.map((t) => ({ ...t, saving: false, error: null, success: false }))
+                );
+            } catch {
+                toast.error("Error fetching templates");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchTemplates();
+    }, [user]);
+
+    const handleChange = (report_type: ReportType, value: string) => {
+        setTemplates((prev) =>
+            prev.map((t) =>
+                t.report_type === report_type
+                    ? { ...t, template_text: value, success: false, error: null }
+                    : t
+            )
+        );
     };
 
     const saveTemplate = async (report_type: ReportType, value: string) => {
         if (!user || !value) return;
-
         setTemplates((prev) =>
             prev.map((t) =>
                 t.report_type === report_type ? { ...t, saving: true, error: null } : t
@@ -47,26 +66,26 @@ export default function TemplatesPage() {
         );
 
         try {
-            await apiClient.saveTemplate(report_type, value);
+            await api.saveTemplate(report_type, value);
             setTemplates((prev) =>
                 prev.map((t) =>
                     t.report_type === report_type ? { ...t, saving: false, success: true } : t
                 )
             );
-            addNotification(`${report_type} saved`, "success");
+            toast.success(`${report_type} saved`);
         } catch (err: any) {
             setTemplates((prev) =>
                 prev.map((t) =>
-                    t.report_type === report_type ? { ...t, saving: false, error: err.message } : t
+                    t.report_type === report_type
+                        ? { ...t, saving: false, error: err.message }
+                        : t
                 )
             );
-            addNotification(`Error saving ${report_type}: ${err.message}`, "error");
+            toast.error(`Error saving ${report_type}: ${err.message}`);
         }
     };
 
     const addTemplate = (report_type: ReportType) => {
-        setShowDropdown(false);
-
         if (templates.find((t) => t.report_type === report_type)) return;
 
         const newTemplate: TemplateState = {
@@ -78,81 +97,59 @@ export default function TemplatesPage() {
         };
 
         setTemplates((prev) => [...prev, newTemplate]);
-        setOpenTemplate(report_type);
+        setOpenTemplate(report_type); // auto-open the new one
     };
 
-    const availableReportTypes = ALL_REPORT_TYPES.filter(
+    const availableReportTypes = Object.values(ReportType).filter(
         (rt) => !templates.some((t) => t.report_type === rt)
     );
 
-    useEffect(() => {
-        fetchTemplates();
-    }, [user]);
-
-    if (loading) return <Layout>Loading...</Layout>;
-
     return (
         <Layout>
-            <div className="space-y-6">
-                {templates.map((template) => (
-                    <Template
-                        key={template.report_type}
-                        id={`template-${template.report_type}`}
-                        reportType={template.report_type}
-                        templateText={template.template_text}
-                        saving={template.saving}
-                        success={template.success}
-                        error={template.error}
-                        handleChange={(rt, val) =>
-                            setTemplates((prev) =>
-                                prev.map((t) =>
-                                    t.report_type === rt ? { ...t, template_text: val, success: false, error: null } : t
+            {loading && <LoadingPage loading={loading} />}
+            {!loading && (
+                <div className="space-y-6">
+                    {templates.map((template) => (
+                        <Template
+                            key={template.report_type}
+                            id={`template-${template.report_type}`}
+                            reportType={template.report_type}
+                            templateText={template.template_text}
+                            saving={template.saving}
+                            success={template.success}
+                            error={template.error}
+                            handleChange={handleChange}
+                            saveTemplate={saveTemplate}
+                            isOpen={openTemplate === template.report_type}
+                            onToggle={() =>
+                                setOpenTemplate((prev) =>
+                                    prev === template.report_type ? null : template.report_type
                                 )
-                            )
-                        }
-                        saveTemplate={saveTemplate}
-                        isOpen={openTemplate === template.report_type}
-                        onToggle={() =>
-                            setOpenTemplate((prev) =>
-                                prev === template.report_type ? null : template.report_type
-                            )
-                        }
-                    />
-                ))}
+                            }
+                        />
+                    ))}
 
-                <div className="relative">
-                    <button
-                        onClick={() => setShowDropdown((prev) => !prev)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition flex items-center justify-between w-56"
-                    >
-                        <span>Create New Template</span>
-                        <span className="ml-2 transition-transform duration-300" style={{ transform: showDropdown ? "rotate(180deg)" : "rotate(0deg)" }}>
-              ▼
-            </span>
-                    </button>
-
-                    <div
-                        className={`absolute left-0 mt-2 w-56 rounded transition-all duration-300 ease-in-out ${
-                            showDropdown ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                        }`}
-                        style={{ transitionProperty: "max-height, opacity" }}
-                    >
-                        {availableReportTypes.length > 0 ? (
-                            availableReportTypes.map((rt) => (
-                                <button
-                                    key={rt}
-                                    onClick={() => addTemplate(rt)}
-                                    className="block w-full text-left px-4 py-2 mb-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    {rt}
-                                </button>
-                            ))
-                        ) : (
-                            <p className="px-4 py-2 text-gray-500 dark:text-gray-400">All templates created</p>
-                        )}
-                    </div>
+                    {/* Add new template dropdown */}
+                    {availableReportTypes.length > 0 && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button className="w-56">Create New Template</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56">
+                                {availableReportTypes.map((rt) => (
+                                    <DropdownMenuItem
+                                        key={rt}
+                                        onClick={() => addTemplate(rt)}
+                                        className="cursor-pointer"
+                                    >
+                                        {rt}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                 </div>
-            </div>
+            )}
         </Layout>
     );
 }

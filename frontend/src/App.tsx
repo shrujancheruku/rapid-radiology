@@ -1,19 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth, AuthProvider } from "./contexts/AuthContext";
-import { NotificationProvider } from "./contexts/NotificationContext";
-import HomePage from "./pages/HomePage"
-import LoginPage from "./pages/LoginPage";
-import TemplatesPage from "./pages/TemplatesPage";
+import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom";
+import {AuthProvider, useAuth} from "@/contexts/AuthContext";
+import HomePage from "@/pages/HomePage"
+import LoginPage from "@/pages/LoginPage";
+import TemplatesPage from "@/pages/TemplatesPage";
+import LoadingPage from "@/pages/LoadingPage.tsx";
+import {ThemeProvider} from "@/contexts/ThemeProvider.tsx";
+import {Toaster} from "sonner";
 
 function AppWrapper() {
-    const { user, loading } = useAuth();
-    if (loading) return <p className="p-4 text-gray-600 dark:text-gray-300">Loading...</p>;
+    const {user, loading} = useAuth();
+    if (loading) return <LoadingPage/>
+
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={user ? <HomePage /> : <Navigate to="/login" />} />
-                <Route path="/templates" element={user ? <TemplatesPage /> : <Navigate to="/login" />} />
-                <Route path="/login" element={<LoginPage />} />
+                <Route path="/" element={user ? <HomePage/> : <Navigate to="/login"/>}/>
+                <Route path="/templates" element={user ? <TemplatesPage/> : <Navigate to="/login"/>}/>
+                <Route path="/login" element={<LoginPage/>}/>
             </Routes>
         </BrowserRouter>
     );
@@ -21,10 +24,11 @@ function AppWrapper() {
 
 export default function App() {
     return (
-        <AuthProvider>
-            <NotificationProvider>
-                <AppWrapper />
-            </NotificationProvider>
-        </AuthProvider>
+        <ThemeProvider>
+            <AuthProvider>
+                <AppWrapper/>
+                <Toaster richColors/>
+            </AuthProvider>
+        </ThemeProvider>
     );
 }

@@ -1,51 +1,79 @@
-import {type FormEvent, useState} from "react";
-import {useAuth} from "../contexts/AuthContext";
-import {useNavigate} from "react-router-dom";
+// src/pages/LoginPage.tsx
+import { FormEvent, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function LoginPage() {
-    const {login} = useAuth();
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-
-    const navigate = useNavigate()
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
+        setLoading(true);
+        setError(null);
+
         try {
-            await login(email, password).then(
-                () => navigate('/')
-            )
+            await login(email, password);
+            navigate("/");
         } catch (err: any) {
-            setError(err.message);
+            setError(err.message || "Login failed");
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
+        <div className="w-screen min-h-screen flex flex-col items-center justify-center px-4">
+            <h1 className="text-6xl font-bold text-center text-gray-900 dark:text-gray-100 mb-12">
+                Rapid Radiology
+            </h1>
 
-        <div className={"w-screen min-h-screen"}>
-            <h1 className={"text-6xl text-gray-900 dark:text-gray-100 w-screen text-center pt-6 pb-12"}>Rapid
-                Radiology</h1>
-            <form className="max-w-sm mx-auto" onSubmit={handleSubmit}>
-                <div className="mb-5">
-                    <label htmlFor="email"
-                           className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input value={email} onChange={e => setEmail(e.target.value)} type="email" id="email"
-                           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                           required/>
+            <form
+                onSubmit={handleSubmit}
+                className="w-full max-w-sm space-y-6 bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md"
+            >
+                <div>
+                    <Input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        placeholder="Email"
+                    />
                 </div>
-                <div className="mb-5">
-                    <label htmlFor="password"
-                           className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                    <input value={password} onChange={e => setPassword(e.target.value)} type="password" id="password"
-                           className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                           required/>
+
+                <div>
+                    <Input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="Password"
+                    />
                 </div>
-                <button type="submit"
-                        className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit
-                </button>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Logging in..." : "Login"}
+                </Button>
+
+                {error && (
+                    <Alert variant="destructive">
+                        <AlertTitle>Login Error</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                )}
             </form>
-            {error && <p style={{color: "red"}}>{error}</p>}
         </div>
     );
 }
