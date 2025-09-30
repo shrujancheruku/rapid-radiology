@@ -51,3 +51,4 @@ jsonschema-specifications~=2025.9.1
 sentry-sdk~=2.38.0
 python-multipart~=0.0.20
 PyJWT~=2.10.1
+google-genai~=1.39.1
