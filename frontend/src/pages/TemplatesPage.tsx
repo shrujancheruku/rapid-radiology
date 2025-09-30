@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {useAuth} from "@/contexts/AuthContext";
 import {ApiClient} from "@/clients/apiClient";
 import {type ReportTemplate, ReportType} from "@/types";
@@ -22,26 +22,36 @@ export default function TemplatesPage() {
     const [templates, setTemplates] = useState<TemplateState[]>([]);
     const [loading, setLoading] = useState(true);
     const [openTemplate, setOpenTemplate] = useState<ReportType | null>(null);
+    const [hasFetched, setHasFetched] = useState(false);
 
     const api = new ApiClient(session);
 
-    useEffect(() => {
+    // Function to fetch templates
+    const fetchTemplates = useCallback(async () => {
         if (!user) return;
-        const fetchTemplates = async () => {
-            try {
-                const res = await api.getTemplates();
-                setTemplates(
-                    res.map((t) => ({...t, saving: false, error: null, success: false}))
-                );
-            } catch {
-                toast.error("Error fetching templates");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTemplates();
-    }, [user]);
 
+        setLoading(true);
+        try {
+            const res = await api.getTemplates();
+            setTemplates(
+                res.map((t) => ({...t, saving: false, error: null, success: false}))
+            );
+            setHasFetched(true);
+        } catch {
+            toast.error("Error fetching templates");
+        } finally {
+            setLoading(false);
+        }
+    }, [user, api]);
+
+    // Initial fetch (once per session)
+    useEffect(() => {
+        if (!hasFetched) {
+            fetchTemplates();
+        }
+    }, [hasFetched, fetchTemplates]);
+
+    // Handle template text change locally
     const handleChange = (report_type: ReportType, value: string) => {
         setTemplates((prev) =>
             prev.map((t) =>
@@ -52,8 +62,10 @@ export default function TemplatesPage() {
         );
     };
 
+    // Save template and refetch
     const saveTemplate = async (report_type: ReportType, value: string) => {
         if (!user || !value) return;
+
         setTemplates((prev) =>
             prev.map((t) =>
                 t.report_type === report_type ? {...t, saving: true, error: null} : t
@@ -62,12 +74,8 @@ export default function TemplatesPage() {
 
         try {
             await api.saveTemplate(report_type, value);
-            setTemplates((prev) =>
-                prev.map((t) =>
-                    t.report_type === report_type ? {...t, saving: false, success: true} : t
-                )
-            );
             toast.success(`${report_type} saved`);
+            await fetchTemplates(); // refetch after save
         } catch (err: any) {
             setTemplates((prev) =>
                 prev.map((t) =>
@@ -80,19 +88,23 @@ export default function TemplatesPage() {
         }
     };
 
-    const addTemplate = (report_type: ReportType) => {
+    // Add new template and refetch
+    const addTemplate = async (report_type: ReportType) => {
         if (templates.find((t) => t.report_type === report_type)) return;
 
-        const newTemplate: TemplateState = {
-            report_type,
-            template_text: "",
-            saving: false,
-            success: false,
-            error: null,
-        };
-
-        setTemplates((prev) => [...prev, newTemplate]);
-        setOpenTemplate(report_type); // auto-open the new one
+        try {
+            const newTemplate: TemplateState = {
+                report_type,
+                template_text: "",
+                saving: false,
+                success: false,
+                error: null,
+            };
+            setTemplates((prev) => [...prev, newTemplate]);
+            setOpenTemplate(report_type); // auto-open the new one
+        } catch (err: any) {
+            toast.error(`Error adding ${report_type}: ${err.message}`);
+        }
     };
 
     const availableReportTypes = Object.values(ReportType).filter(
