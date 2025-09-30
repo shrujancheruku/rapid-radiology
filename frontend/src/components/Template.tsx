@@ -39,7 +39,7 @@ export default function Template({
 
 
     return (
-        <Card className="pt-4 pb-0">
+        <Card className="pt-5 pb-0">
             <CardHeader
                 className="flex flex-row justify-between items-center cursor-pointer"
                 onClick={onToggle}

@@ -18,8 +18,8 @@ export default function LoadingPage() {
                             dx="0"
                             dy="0"
                             stdDeviation="1.5"
-                            floodColor="slate"
-                            floodOpacity="0.4"
+                            floodColor="stroke-border"
+                            floodOpacity="0.2"
                         />
                     </filter>
                 </defs>
