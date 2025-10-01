@@ -1,5 +1,5 @@
 // src/pages/HomePage.tsx
-import {useEffect, useState} from "react";
+import {RefObject, useEffect, useRef, useState} from "react";
 import {ApiClient} from "@/clients/apiClient";
 import {useAuth} from "@/contexts/AuthContext";
 import {ReportType} from "@/types";
@@ -32,6 +32,11 @@ export default function HomePage() {
 
     const api = new ApiClient(session);
 
+    // Refs for steps
+    const step1Ref = useRef<HTMLDivElement | null>(null);
+    const step2Ref = useRef<HTMLDivElement | null>(null);
+    const step3Ref = useRef<HTMLDivElement | null>(null);
+
     useEffect(() => {
         (async () => {
             try {
@@ -45,19 +50,62 @@ export default function HomePage() {
         })();
     }, []);
 
+    // SCROLL INTO VIEW: wait a frame + short timeout so AnimatePresence/framer-motion can mount the DOM node
+    useEffect(() => {
+        const map: {
+            1: RefObject<HTMLDivElement | null>;
+            2: RefObject<HTMLDivElement | null>;
+            3: RefObject<HTMLDivElement | null>;
+        } = {
+            1: step1Ref,
+            2: step2Ref,
+            3: step3Ref,
+        };
+
+        let raf = 0;
+        let timer = 0;
+
+        const scrollTo = () => {
+            const target = map[step]?.current;
+            if (target && typeof target.scrollIntoView === "function") {
+                try {
+                    target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "end",
+                        inline: "nearest",
+                    });
+                } catch {
+                    // fallback to instant if some browsers choke
+                    target.scrollIntoView(true);
+                }
+            }
+        };
+
+        // schedule after next paint, then a small delay to allow framer-motion mount
+        raf = requestAnimationFrame(() => {
+            // 50ms is tiny but usually enough for framer-motion to attach the node;
+            // adjust if you have heavy animations (100ms)
+            timer = window.setTimeout(scrollTo, 50);
+        });
+
+        return () => {
+            cancelAnimationFrame(raf);
+            clearTimeout(timer);
+        };
+    }, [step]);
+
     const handleGenerate = async () => {
         if (!selectedType) return;
         setSubmitting(true);
+        setReport(null)
+        setGeminiReport(null)
         setStep(3);
 
-        // Run both requests in parallel
-        api
-            .generateReport(selectedType, input)
+        api.generateReport(selectedType, input)
             .then((res) => setReport(res))
             .catch(() => toast.error("Failed to generate report"));
 
-        api
-            .generateGeminiReport(selectedType, input)
+        api.generateGeminiReport(selectedType, input)
             .then((res) => setGeminiReport(res))
             .catch(() => toast.error("Failed to generate Gemini report"))
             .finally(() => setSubmitting(false));
@@ -112,6 +160,7 @@ export default function HomePage() {
                 <AnimatePresence>
                     {step >= 1 && (
                         <motion.div
+                            ref={step1Ref}
                             key="step1"
                             initial={{opacity: 0, y: 0}}
                             animate={{opacity: 1, y: 0}}
@@ -148,6 +197,7 @@ export default function HomePage() {
                 <AnimatePresence>
                     {step >= 2 && selectedType && (
                         <motion.div
+                            ref={step2Ref}
                             key="step2"
                             initial={{opacity: 0, y: 20}}
                             animate={{opacity: 1, y: 0}}
@@ -166,7 +216,7 @@ export default function HomePage() {
                                         placeholder="Enter radiologist findings..."
                                     />
                                     <Button onClick={handleGenerate} disabled={submitting || !input}>
-                                        Generate Reports
+                                        <span>Generate Reports</span>
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -178,82 +228,116 @@ export default function HomePage() {
                 <AnimatePresence>
                     {step === 3 && (
                         <motion.div
+                            ref={step3Ref}
                             key="step3"
-                            initial={{opacity: 0, y: 20}}
-                            animate={{opacity: 1, y: 0}}
-                            exit={{opacity: 0, y: -20}}
-                            transition={{duration: 0.3}}
+                            initial={{opacity: 0}}
+                            animate={{opacity: 1}}
+                            exit={{opacity: 0}}
+                            transition={{duration: 0.4}}
                         >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* OpenAI Report Card */}
+                                {/* OpenAI report */}
                                 <Card>
                                     <CardHeader className="flex flex-row items-center gap-2">
                                         <BotMessageSquare className="h-5 w-5 text-primary"/>
                                         <CardTitle>OpenAI Report</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
-                                        {report ? (
-                                            <>
-                                                <Textarea value={report} readOnly className="h-64"/>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="secondary"
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(report);
-                                                            toast.success("Copied OpenAI report to clipboard!");
-                                                        }}
-                                                        className="flex items-center justify-start"
-                                                    >
-                                                        <Clipboard className="h-4 w-4 mr-2"/>
-                                                        Copy
-                                                    </Button>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div
-                                                className="h-64 flex items-center justify-center text-muted-foreground">
-                                                <Loader2 className="h-6 w-6 animate-spin mr-2"/>
-                                                Generating OpenAI report...
-                                            </div>
-                                        )}
+                                        <AnimatePresence mode="wait">
+                                            {report ? (
+                                                <motion.div
+                                                    key="report"
+                                                    initial={{opacity: 0}}
+                                                    animate={{opacity: 1}}
+                                                    exit={{opacity: 0}}
+                                                    transition={{duration: 0.6}}
+                                                >
+                                                    <Textarea value={report} readOnly className="h-64"/>
+                                                </motion.div>
+                                            ) : (
+                                                <motion.div
+                                                    key="report-loading"
+                                                    initial={{opacity: 0}}
+                                                    animate={{opacity: 1}}
+                                                    exit={{opacity: 0}}
+                                                    transition={{duration: 0.6}}
+                                                    className="h-64 flex items-center justify-center text-muted-foreground"
+                                                >
+                                                    <Loader2 className="h-6 w-6 animate-spin mr-2 text-primary"/>
+                                                    Generating OpenAI report...
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        <Button
+                                            variant="secondary"
+                                            disabled={!report}
+                                            onClick={() => {
+                                                if (report) {
+                                                    navigator.clipboard.writeText(report);
+                                                    toast.success("Copied OpenAI report to clipboard!");
+                                                }
+                                            }}
+                                            className="flex items-center justify-start"
+                                        >
+                                            <Clipboard className="h-4 w-4"/>
+                                            <span>Copy</span>
+                                        </Button>
                                     </CardContent>
                                 </Card>
 
-                                {/* Gemini Report Card */}
+                                {/* Gemini report */}
                                 <Card>
                                     <CardHeader className="flex flex-row items-center gap-2">
                                         <Sparkle className="h-5 w-5 text-primary"/>
                                         <CardTitle>Gemini Report</CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
-                                        {geminiReport ? (
-                                            <>
-                                                <Textarea value={geminiReport} readOnly className="h-64"/>
-                                                <div className="flex gap-2">
-                                                    <Button
-                                                        variant="secondary"
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(geminiReport);
-                                                            toast.success("Copied Gemini report to clipboard!");
-                                                        }}
-                                                        className="flex items-center justify-start"
-                                                    >
-                                                        <Clipboard className="h-4 w-4 mr-2"/>
-                                                        Copy
-                                                    </Button>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <div
-                                                className="h-64 flex items-center justify-center text-muted-foreground">
-                                                <Loader2 className="h-6 w-6 animate-spin mr-2"/>
-                                                Generating Gemini report...
-                                            </div>
-                                        )}
+                                        <AnimatePresence mode="wait">
+                                            {geminiReport ? (
+                                                <motion.div
+                                                    key="gemini-report"
+                                                    initial={{opacity: 0}}
+                                                    animate={{opacity: 1}}
+                                                    exit={{opacity: 0}}
+                                                    transition={{duration: 0.6}}
+                                                >
+                                                    <Textarea value={geminiReport} readOnly className="h-64"/>
+                                                </motion.div>
+                                            ) : (
+                                                <motion.div
+                                                    key="gemini-loading"
+                                                    initial={{opacity: 0}}
+                                                    animate={{opacity: 1}}
+                                                    exit={{opacity: 0}}
+                                                    transition={{duration: 0.6}}
+                                                    className="h-64 flex items-center justify-center text-muted-foreground"
+                                                >
+                                                    <Loader2 className="h-6 w-6 animate-spin mr-2 text-primary"/>
+                                                    Generating Gemini report...
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        <Button
+                                            disabled={!geminiReport}
+                                            variant="secondary"
+                                            onClick={() => {
+                                                if (geminiReport) {
+                                                    navigator.clipboard.writeText(geminiReport);
+                                                    toast.success("Copied Gemini report to clipboard!");
+                                                }
+                                            }}
+                                            className="flex items-center justify-start"
+                                        >
+                                            <Clipboard className="h-4 w-4"/>
+                                            <span>Copy</span>
+                                        </Button>
                                     </CardContent>
                                 </Card>
                             </div>
-                            <div className='w-full flex justify-center items-center mt-4'>
+
+                            <div className="w-full flex justify-center items-center mt-4">
                                 <Button onClick={reset}>Start Over</Button>
                             </div>
                         </motion.div>
@@ -261,5 +345,6 @@ export default function HomePage() {
                 </AnimatePresence>
             </div>
         </Layout>
-    );
+    )
+        ;
 }
