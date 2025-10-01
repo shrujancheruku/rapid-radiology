@@ -1,5 +1,5 @@
 // src/pages/HomePage.tsx
-import {RefObject, useEffect, useRef, useState} from "react";
+import {type RefObject, useEffect, useRef, useState} from "react";
 import {ApiClient} from "@/clients/apiClient";
 import {useAuth} from "@/contexts/AuthContext";
 import {ReportType} from "@/types";
@@ -55,7 +55,7 @@ export default function HomePage() {
         const map: {
             1: RefObject<HTMLDivElement | null>;
             2: RefObject<HTMLDivElement | null>;
-            3: RefObject<HTMLDivElement | null>;
+            3: RefObject<HTMLDivElement | null>
         } = {
             1: step1Ref,
             2: step2Ref,
@@ -66,7 +66,7 @@ export default function HomePage() {
         let timer = 0;
 
         const scrollTo = () => {
-            const target = map[step]?.current;
+            const target = map[step as 1 | 2 | 3]?.current;
             if (target && typeof target.scrollIntoView === "function") {
                 try {
                     target.scrollIntoView({
@@ -81,10 +81,8 @@ export default function HomePage() {
             }
         };
 
-        // schedule after next paint, then a small delay to allow framer-motion mount
         raf = requestAnimationFrame(() => {
-            // 50ms is tiny but usually enough for framer-motion to attach the node;
-            // adjust if you have heavy animations (100ms)
+            // small delay to allow framer-motion to mount
             timer = window.setTimeout(scrollTo, 50);
         });
 
