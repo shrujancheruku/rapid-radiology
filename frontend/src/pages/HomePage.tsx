@@ -82,17 +82,25 @@ export default function HomePage() {
     if (templates.length === 0) {
         return (
             <Layout>
-                <Card className="max-w-lg mx-auto mt-10">
-                    <CardHeader>
-                        <CardTitle>No Templates Found</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p className="text-muted-foreground">
-                            You don’t have any templates yet. Please create some before generating reports.
-                        </p>
-                        <Button onClick={() => navigate("/templates")}>Go to Templates</Button>
-                    </CardContent>
-                </Card>
+                <motion.div
+                    key="no-templates"
+                    initial={{opacity: 0, y: 0}}
+                    animate={{opacity: 1, y: 0}}
+                    exit={{opacity: 0, y: 0}}
+                    transition={{duration: 1}}
+                >
+                    <Card className="max-w-lg mx-auto mt-10">
+                        <CardHeader>
+                            <CardTitle>No Templates Found</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-muted-foreground">
+                                You don’t have any templates yet. Please create some before generating reports.
+                            </p>
+                            <Button onClick={() => navigate("/templates")}>Go to Templates</Button>
+                        </CardContent>
+                    </Card>
+                </motion.div>
             </Layout>
         );
     }
