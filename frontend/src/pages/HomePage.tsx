@@ -88,20 +88,28 @@ export default function HomePage() {
     }, [step]);
 
     const handleGenerate = async () => {
-        if (!selectedType) return;
+        if (!selectedType || !input) return;
         setSubmitting(true);
-        setReport(null)
-        setGeminiReport(null)
+        setReport(null);
+        setGeminiReport(null);
         setStep(3);
+        try {
+            const reportPromise = api
+                .generateReport(selectedType, input)
+                .then((res) => setReport(res))
+                .catch(() => toast.error("Failed to generate report"));
 
-        api.generateReport(selectedType, input)
-            .then((res) => setReport(res))
-            .catch(() => toast.error("Failed to generate report"));
+            const geminiReportPromise = api
+                .generateGeminiReport(selectedType, input)
+                .then((res) => setGeminiReport(res))
+                .catch(() => toast.error("Failed to generate Gemini report"));
 
-        api.generateGeminiReport(selectedType, input)
-            .then((res) => setGeminiReport(res))
-            .catch(() => toast.error("Failed to generate Gemini report"))
-            .finally(() => setSubmitting(false));
+            await Promise.allSettled([reportPromise, geminiReportPromise]);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const reset = () => {
