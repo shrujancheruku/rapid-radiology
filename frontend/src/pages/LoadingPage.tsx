@@ -20,7 +20,6 @@ export default function LoadingPage() {
 
                 >
                     <defs>
-                        {/* Softer glow filter */}
                         <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                             <feDropShadow
                                 dx="0"
@@ -32,7 +31,6 @@ export default function LoadingPage() {
                         </filter>
                     </defs>
 
-                    {/* Background circle (muted stroke) */}
                     <circle
                         cx="50"
                         cy="50"
@@ -42,7 +40,6 @@ export default function LoadingPage() {
                         className="stroke-muted"
                     />
 
-                    {/* Arc 1 (primary with subtle pulsing glow) */}
                     <motion.path
                         d="M50 10 A40 40 0 0 1 90 50"
                         strokeWidth="8"
@@ -54,7 +51,6 @@ export default function LoadingPage() {
                         transition={{repeat: Infinity, duration: 1.8, ease: "easeInOut"}}
                     />
 
-                    {/* Arc 2 (opposite, primary with subtle pulsing glow) */}
                     <motion.path
                         d="M50 90 A40 40 0 0 1 10 50"
                         strokeWidth="8"

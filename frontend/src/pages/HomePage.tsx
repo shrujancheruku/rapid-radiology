@@ -1,4 +1,3 @@
-// src/pages/HomePage.tsx
 import {type RefObject, useEffect, useRef, useState} from "react";
 import {ApiClient} from "@/clients/apiClient";
 import {useAuth} from "@/contexts/AuthContext";
@@ -32,7 +31,6 @@ export default function HomePage() {
 
     const api = new ApiClient(session);
 
-    // Refs for steps
     const step1Ref = useRef<HTMLDivElement | null>(null);
     const step2Ref = useRef<HTMLDivElement | null>(null);
     const step3Ref = useRef<HTMLDivElement | null>(null);
@@ -50,7 +48,6 @@ export default function HomePage() {
         })();
     }, []);
 
-    // SCROLL INTO VIEW: wait a frame + short timeout so AnimatePresence/framer-motion can mount the DOM node
     useEffect(() => {
         const map: {
             1: RefObject<HTMLDivElement | null>;
@@ -75,14 +72,12 @@ export default function HomePage() {
                         inline: "nearest",
                     });
                 } catch {
-                    // fallback to instant if some browsers choke
                     target.scrollIntoView(true);
                 }
             }
         };
 
         raf = requestAnimationFrame(() => {
-            // small delay to allow framer-motion to mount
             timer = window.setTimeout(scrollTo, 50);
         });
 
@@ -154,7 +149,6 @@ export default function HomePage() {
     return (
         <Layout>
             <div className="max-w-4xl mx-auto space-y-6 mt-6">
-                {/* Step 1 */}
                 <AnimatePresence>
                     {step >= 1 && (
                         <motion.div
@@ -191,7 +185,6 @@ export default function HomePage() {
                     )}
                 </AnimatePresence>
 
-                {/* Step 2 */}
                 <AnimatePresence>
                     {step >= 2 && selectedType && (
                         <motion.div
@@ -222,7 +215,6 @@ export default function HomePage() {
                     )}
                 </AnimatePresence>
 
-                {/* Step 3 */}
                 <AnimatePresence>
                     {step === 3 && (
                         <motion.div
@@ -234,7 +226,6 @@ export default function HomePage() {
                             transition={{duration: 0.4}}
                         >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* OpenAI report */}
                                 <Card>
                                     <CardHeader className="flex flex-row items-center gap-2">
                                         <BotMessageSquare className="h-5 w-5 text-primary"/>
@@ -284,7 +275,6 @@ export default function HomePage() {
                                     </CardContent>
                                 </Card>
 
-                                {/* Gemini report */}
                                 <Card>
                                     <CardHeader className="flex flex-row items-center gap-2">
                                         <Sparkle className="h-5 w-5 text-primary"/>

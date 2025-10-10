@@ -16,11 +16,10 @@ from sqlmodel import Session, select, create_engine
 
 from models import ReportTemplate, ReportType, ApiReportTemplate, GenerateReportResponse, GenerateReportRequest
 
-# --- Config ---
 load_dotenv()
 ENV = os.getenv("ENV", "development")
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")  # from your Supabase project settings
-DATABASE_URL = os.getenv("DATABASE_URL")  # Postgres connection string from Supabase
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -28,7 +27,6 @@ gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 engine = create_engine(DATABASE_URL)
 
 
-# --- Auth Dependency ---
 def get_current_user(authorization: str = Header(...)) -> str:
     """
     Extract and validate JWT issued by Supabase Auth.
@@ -40,12 +38,11 @@ def get_current_user(authorization: str = Header(...)) -> str:
 
     try:
         payload = jwt.decode(token, SUPABASE_JWT_SECRET, algorithms=["HS256"], audience='authenticated')
-        return payload["sub"]  # Supabase puts the user ID in `sub`
+        return payload["sub"]
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
 
 
-# --- DB session ---
 def get_session():
     with Session(engine) as session:
         yield session
@@ -56,7 +53,6 @@ def run_migrations():
     command.upgrade(alembic_cfg, "head")
 
 
-# --- Lifespan context ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting up...")
@@ -67,7 +63,6 @@ async def lifespan(app: FastAPI):
     print("Shutting down...")
 
 
-# --- FastAPI App ---
 app = FastAPI(
     title="Radiology Report Template API with Auth & Supabase",
     lifespan=lifespan,
@@ -87,15 +82,11 @@ app.add_middleware(
 )
 
 
-# --- CRUD Endpoints ---
-
-
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
 
-# Create or update template (upsert behavior)
 @app.post("/templates", response_model=ApiReportTemplate)
 def upsert_template(
         template: ApiReportTemplate,
@@ -104,7 +95,6 @@ def upsert_template(
 ):
     try:
 
-        # Check if the user already has a template for this report_type
         existing = session.exec(
             select(ReportTemplate).where(
                 ReportTemplate.user_id == user_id,
@@ -113,7 +103,6 @@ def upsert_template(
         ).first()
 
         if existing:
-            # Update
             existing.template_text = template.template_text
             session.add(existing)
             session.commit()
@@ -123,7 +112,6 @@ def upsert_template(
                 template_text=existing.template_text,
             )
         else:
-            # Create new
             template = ReportTemplate(user_id=user_id, report_type=template.report_type,
                                       template_text=template.template_text)
             session.add(template)
@@ -138,19 +126,15 @@ def upsert_template(
         raise HTTPException(status_code=404, detail=str(e))
 
 
-# Read all templates for the current user
-
 @app.get("/templates", response_model=List[ApiReportTemplate])
 def read_templates(
         user_id: str = Depends(get_current_user),
         session: Session = Depends(get_session),
 ):
-    # Fetch all templates the user has created
     existing_templates = session.exec(
         select(ReportTemplate).where(ReportTemplate.user_id == user_id)
     ).all()
 
-    # Build a full list (one entry per report type)
     results = [
         ApiReportTemplate(
             report_type=template.report_type,
@@ -161,7 +145,6 @@ def read_templates(
     return results
 
 
-# Read a single template by a report type
 @app.get("/templates/{report_type}", response_model=ApiReportTemplate)
 def read_template(
         report_type: ReportType,
@@ -181,7 +164,6 @@ def read_template(
     )
 
 
-# Delete template
 @app.delete("/templates/{report_type}")
 def delete_template(
         report_type: ReportType,
@@ -241,7 +223,6 @@ INSTRUCTIONS = """
     """
 
 
-# --- Generate report endpoint ---
 @app.post("/generate-report", response_model=GenerateReportResponse)
 def generate_report(
         req: GenerateReportRequest,

@@ -24,19 +24,17 @@ export default function TemplatesPage() {
     const [openTemplate, setOpenTemplate] = useState<ReportType | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
 
-    // Animation state managed at page level
     const [showSuccessMap, setShowSuccessMap] = useState<Record<string, boolean>>({});
 
     const api = new ApiClient(session);
 
-    // Fetch templates
     const fetchTemplates = useCallback(async () => {
         if (!user) return;
 
         setLoading(true);
         try {
             const res = await api.getTemplates();
-            // Merge existing templates with fetched ones to prevent flicker
+
             setTemplates((prev) => {
                 const prevMap = Object.fromEntries(prev.map(t => [t.report_type, t]));
                 return res.map((t) => ({
@@ -59,7 +57,6 @@ export default function TemplatesPage() {
         if (!hasFetched) fetchTemplates();
     }, [hasFetched, fetchTemplates]);
 
-    // Handle text change locally
     const handleChange = (report_type: ReportType, value: string) => {
         setTemplates((prev) =>
             prev.map((t) =>
@@ -70,11 +67,9 @@ export default function TemplatesPage() {
         );
     };
 
-    // Save template
     const saveTemplate = async (report_type: ReportType, value: string) => {
         if (!user || !value) return;
 
-        // Optimistic save state
         setTemplates((prev) =>
             prev.map((t) =>
                 t.report_type === report_type ? {...t, saving: true, error: null} : t
@@ -84,14 +79,12 @@ export default function TemplatesPage() {
         try {
             await api.saveTemplate(report_type, value);
 
-            // Trigger tick animation
             setShowSuccessMap((prev) => ({...prev, [report_type]: true}));
 
             setTimeout(() => {
                 setShowSuccessMap((prev) => ({...prev, [report_type]: false}));
             }, 2000);
 
-            // Merge updated template instead of replacing all templates
             setTemplates((prev) =>
                 prev.map((t) =>
                     t.report_type === report_type
@@ -111,7 +104,6 @@ export default function TemplatesPage() {
         }
     };
 
-    // Add new template
     const addTemplate = async (report_type: ReportType) => {
         if (templates.find((t) => t.report_type === report_type)) return;
 

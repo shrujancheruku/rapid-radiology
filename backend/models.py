@@ -1,8 +1,8 @@
-# --- ENUM for Radiology Report Types ---
 from enum import Enum
 from typing import Optional
 
 from sqlmodel import SQLModel, Field, UniqueConstraint
+
 
 class ReportType(str, Enum):
     CT_CHEST = "CT Chest"
@@ -11,7 +11,7 @@ class ReportType(str, Enum):
     CT_URINARY_TRACT = "CT Urinary Tract"
     MRI_BRACHIAL_PLEXUS = "MRI Brachial Plexus"
     MRI_HEAD = "MRI Head"
-    MRI_HAND ="MRI Hand"
+    MRI_HAND = "MRI Hand"
     MRI_WRIST = "MRI Wrist"
     MRI_ELBOW = "MRI Elbow"
     MRI_ANKLE = "MRI Ankle"
@@ -27,7 +27,6 @@ class ReportType(str, Enum):
     MRI_COCCYX = "MRI Coccyx"
 
 
-# --- Database Model ---
 class ReportTemplate(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("user_id", "report_type"),)  # enforce one per type per user
 
@@ -37,15 +36,15 @@ class ReportTemplate(SQLModel, table=True):
     template_text: str
 
 
-# Response schema (doesn't expose user_id)
 class ApiReportTemplate(SQLModel):
     report_type: ReportType
     template_text: Optional[str]
+
 
 class GenerateReportRequest(SQLModel):
     report_type: ReportType
     radiologist_input: str
 
+
 class GenerateReportResponse(SQLModel):
     report_text: str
-

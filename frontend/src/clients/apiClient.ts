@@ -10,7 +10,6 @@ export class ApiClient {
 
         this.client = axios.create({ baseURL });
 
-        // Attach Authorization header automatically if session exists
         if (session && session?.access_token) {
             this.client.defaults.headers.common[
                 "Authorization"
@@ -18,18 +17,15 @@ export class ApiClient {
         }
     }
 
-    // Fetch all templates for the user
     async getTemplates(): Promise<ReportTemplate[]> {
         const res = await this.client.get("/templates");
         return res.data;
     }
 
-    // Save a template
     async saveTemplate(report_type: ReportType, template_text: string) {
         return this.client.post("/templates", { report_type, template_text });
     }
 
-    // Generate a report using the OpenAI GPT-4 API
     async generateReport(report_type: ReportType, radiologist_input: string): Promise<string> {
         const res = await this.client.post<{ report_text: string }>("/generate-report", {
             report_type,
