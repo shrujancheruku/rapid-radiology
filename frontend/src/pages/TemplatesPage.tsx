@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "@/clients/apiClient";
+import { api } from "@/backend";
 import { ReportType } from "@/types";
 import Layout from "@/components/Layout";
 import NormalTemplateEditor, {
