@@ -221,3 +221,5 @@ backend/.env
 .DS_Store
 
 .claude/worktrees/
+.claude/orchestrate-state.json
+.claude/orchestrate-profiles/
