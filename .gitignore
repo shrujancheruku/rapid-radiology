@@ -216,9 +216,8 @@ backend/.idea/*
 
 backend/supabase/
 
-backend/test.db
+*.db
 backend/.env
-backend/test.db
 .DS_Store
 
 .claude/worktrees/

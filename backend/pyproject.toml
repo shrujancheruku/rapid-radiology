@@ -1,0 +1,31 @@
+[project]
+name = "rapid-radiology-backend"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic~=1.16.5",
+    "alembic-postgresql-enum~=1.8.0",
+    "fastapi[standard]~=0.117.1",
+    "google-genai~=1.39.1",
+    "openai~=1.109.1",
+    "psycopg2-binary~=2.9.10",
+    "pydantic-settings~=2.11.0",
+    "pyjwt~=2.10.1",
+    "python-dotenv~=1.1.1",
+    "sqlmodel~=0.0.25",
+]
+
+[dependency-groups]
+dev = [
+    "pytest~=8.4.2",
+    "ruff~=0.13.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.ruff]
+extend-exclude = ["migrations/versions"]

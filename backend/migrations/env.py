@@ -1,5 +1,5 @@
 import os
-import alembic_postgresql_enum
+import alembic_postgresql_enum  # noqa: F401  (registers enum autogenerate support)
 
 from logging.config import fileConfig
 
@@ -8,7 +8,9 @@ from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
-from models import *
+from sqlmodel import SQLModel
+
+import models  # noqa: F401  (registers tables on SQLModel.metadata)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
