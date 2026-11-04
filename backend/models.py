@@ -28,7 +28,9 @@ class ReportType(str, Enum):
 
 
 class ReportTemplate(SQLModel, table=True):
-    __table_args__ = (UniqueConstraint("user_id", "report_type"),)  # enforce one per type per user
+    __table_args__ = (
+        UniqueConstraint("user_id", "report_type"),
+    )  # enforce one per type per user
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(index=True)  # Supabase Auth UUID
