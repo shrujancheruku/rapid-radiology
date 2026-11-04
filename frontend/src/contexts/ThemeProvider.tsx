@@ -1,13 +1,5 @@
-import {
-    createContext,
-    useContext,
-    useState,
-    useEffect,
-    useRef,
-    type ReactNode,
-} from "react";
-
-type Theme = "dark" | "light" | "system";
+import { useState, useEffect, useRef, type ReactNode } from "react";
+import { type Theme, ThemeContext } from "@/contexts/useTheme";
 
 interface ThemeProviderProps {
     children: ReactNode;
@@ -15,76 +7,48 @@ interface ThemeProviderProps {
     storageKey?: string;
 }
 
-interface ThemeContextType {
-    theme: Theme;
-    setTheme: (theme: Theme) => void;
-}
+const darkQuery = () => window.matchMedia("(prefers-color-scheme: dark)");
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const applyThemeClass = (t: Theme) => {
+    const root = window.document.documentElement;
+    root.classList.remove("light", "dark");
+    if (t === "system") {
+        root.classList.add(darkQuery().matches ? "dark" : "light");
+    } else {
+        root.classList.add(t);
+    }
+};
 
 export function ThemeProvider({
                                   children,
                                   defaultTheme = "system",
                                   storageKey = "vite-ui-theme",
                               }: ThemeProviderProps) {
-    const safeGetStored = () => {
-        if (typeof window === "undefined") return null;
-        try {
-            return (localStorage.getItem(storageKey) as Theme | null) || null;
-        } catch {
-            return null;
-        }
-    };
-
     const [theme, setThemeState] = useState<Theme>(() => {
-        const stored = safeGetStored();
-        return (stored as Theme) || defaultTheme;
+        try {
+            return (localStorage.getItem(storageKey) as Theme | null) || defaultTheme;
+        } catch {
+            return defaultTheme;
+        }
     });
 
+    // The system-theme listener is registered once, so it reads the latest theme from a ref.
+    const themeRef = useRef(theme);
     const transitionTimerRef = useRef<number | null>(null);
-    const mqlRef = useRef<MediaQueryList | null>(null);
-
-    const applyThemeClass = (t: Theme) => {
-        if (typeof window === "undefined") return;
-        const root = window.document.documentElement;
-        root.classList.remove("light", "dark");
-        if (t === "system") {
-            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-            root.classList.add(prefersDark ? "dark" : "light");
-        } else {
-            root.classList.add(t);
-        }
-    };
 
     useEffect(() => {
-        applyThemeClass(theme);
+        applyThemeClass(themeRef.current);
 
-        if (typeof window !== "undefined") {
-            const mql = window.matchMedia("(prefers-color-scheme: dark)");
-            const handler = () => {
-                if (theme === "system") applyThemeClass("system");
-            };
+        const mql = darkQuery();
+        const handler = () => {
+            if (themeRef.current === "system") applyThemeClass("system");
+        };
 
-            if (mql.addEventListener) mql.addEventListener("change", handler);
-            else mql.addListener(handler);
-
-            mqlRef.current = mql;
-
-            return () => {
-                if (!mqlRef.current) return;
-                if (mqlRef.current.removeEventListener)
-                    mqlRef.current.removeEventListener("change", handler);
-                else mqlRef.current.removeListener(handler);
-            };
-        }
+        mql.addEventListener("change", handler);
+        return () => mql.removeEventListener("change", handler);
     }, []);
 
     const setTheme = (newTheme: Theme) => {
-        if (typeof window === "undefined") {
-            setThemeState(newTheme);
-            return;
-        }
-
         const root = window.document.documentElement;
 
         if (transitionTimerRef.current) {
@@ -93,23 +57,17 @@ export function ThemeProvider({
         }
 
         root.classList.add("theme-transition");
+        // Force a reflow so the transition class applies before the theme class changes.
+        void root.offsetHeight;
 
-        root.offsetHeight;
-
-
-        if (newTheme === "system") {
-            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-            root.classList.remove("light", "dark");
-            root.classList.add(prefersDark ? "dark" : "light");
-        } else {
-            root.classList.remove("light", "dark");
-            root.classList.add(newTheme);
-        }
+        applyThemeClass(newTheme);
 
         try {
             localStorage.setItem(storageKey, newTheme);
         } catch {
+            // Storage can be unavailable (private mode); the theme still applies for this visit.
         }
+        themeRef.current = newTheme;
         setThemeState(newTheme);
 
         transitionTimerRef.current = window.setTimeout(() => {
@@ -123,12 +81,4 @@ export function ThemeProvider({
             {children}
         </ThemeContext.Provider>
     );
-}
-
-export function useTheme() {
-    const ctx = useContext(ThemeContext);
-    if (!ctx) {
-        throw new Error("useTheme must be used within ThemeProvider");
-    }
-    return ctx;
 }

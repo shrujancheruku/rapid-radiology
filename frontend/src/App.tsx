@@ -1,10 +1,11 @@
 import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom";
-import {AuthProvider, useAuth} from "@/contexts/AuthContext";
+import {AuthProvider} from "@/contexts/AuthContext";
+import {useAuth} from "@/contexts/useAuth";
 import HomePage from "@/pages/HomePage"
 import LoginPage from "@/pages/LoginPage";
 import TemplatesPage from "@/pages/TemplatesPage";
 import LoadingPage from "@/pages/LoadingPage.tsx";
-import {ThemeProvider} from "@/contexts/ThemeProvider.tsx";
+import {ThemeProvider} from "@/contexts/ThemeProvider";
 import {Toaster} from "sonner";
 
 function AppWrapper() {

@@ -21,7 +21,9 @@ export enum ReportType {
     MRI_COCCYX = "MRI Coccyx",
 }
 
-export interface ReportTemplate {
+export interface NormalTemplate {
     report_type: ReportType;
     template_text: string | null;
 }
+
+export type ModelId = "openai" | "gemini";
