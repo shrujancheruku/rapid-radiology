@@ -1,46 +1,42 @@
 import axios, { type AxiosInstance } from "axios";
-import type { Session } from "@supabase/supabase-js";
-import { type ReportTemplate, ReportType } from "@/types";
+import { supabase } from "@/clients/supabaseClient";
+import type { ModelId, NormalTemplate, ReportType } from "@/types";
 
-export class ApiClient {
+const GENERATE_URLS: Record<ModelId, string> = {
+    openai: "/generate-report",
+    gemini: "/generate-report-gemini",
+};
+
+class ApiClient {
     private client: AxiosInstance;
 
-    constructor(session?: Session | null) {
-        const baseURL = import.meta.env.VITE_API_URL as string;
+    constructor() {
+        this.client = axios.create({ baseURL: import.meta.env.VITE_API_URL as string });
 
-        this.client = axios.create({ baseURL });
-
-        if (session && session?.access_token) {
-            this.client.defaults.headers.common[
-                "Authorization"
-                ] = `Bearer ${session.access_token}`;
-        }
+        this.client.interceptors.request.use(async (config) => {
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            if (token) config.headers.Authorization = `Bearer ${token}`;
+            return config;
+        });
     }
 
-    async getTemplates(): Promise<ReportTemplate[]> {
-        const res = await this.client.get("/templates");
+    async getNormalTemplates(): Promise<NormalTemplate[]> {
+        const res = await this.client.get<NormalTemplate[]>("/templates");
         return res.data;
     }
 
-    async saveTemplate(report_type: ReportType, template_text: string) {
-        return this.client.post("/templates", { report_type, template_text });
+    async saveNormalTemplate(report_type: ReportType, template_text: string) {
+        await this.client.post("/templates", { report_type, template_text });
     }
 
-    async generateReport(report_type: ReportType, radiologist_input: string): Promise<string> {
-        const res = await this.client.post<{ report_text: string }>("/generate-report", {
+    async generateReport(model: ModelId, report_type: ReportType, findings: string): Promise<string> {
+        const res = await this.client.post<{ report_text: string }>(GENERATE_URLS[model], {
             report_type,
-            radiologist_input
+            radiologist_input: findings,
         });
-
-        return res.data.report_text;
-    }
-
-    async generateGeminiReport(report_type: ReportType, radiologist_input: string): Promise<string> {
-        const res = await this.client.post<{ report_text: string }>("/generate-report-gemini", {
-            report_type,
-            radiologist_input
-        });
-
         return res.data.report_text;
     }
 }
+
+export const api = new ApiClient();

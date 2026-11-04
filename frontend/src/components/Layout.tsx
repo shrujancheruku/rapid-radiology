@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { ModeToggle } from "@/components/ModeToggle";
 import {
     NavigationMenu,
@@ -22,7 +22,7 @@ export default function Layout({ children }: LayoutProps) {
 
     const navItems = [
         { label: "Home", to: "/" },
-        { label: "Templates", to: "/templates" },
+        { label: "Normal Templates", to: "/templates" },
     ];
 
     return (
