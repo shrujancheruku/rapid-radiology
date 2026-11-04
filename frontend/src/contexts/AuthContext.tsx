@@ -4,45 +4,48 @@ import { supabase } from "@/clients/supabaseClient";
 import { AuthContext } from "@/contexts/useAuth";
 
 interface Props {
-    children: ReactNode;
+  children: ReactNode;
 }
 
 export const AuthProvider = ({ children }: Props) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, []);
-
-    const login = async (email: string, password: string) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+    return () => {
+      subscription.unsubscribe();
     };
+  }, []);
 
-    const logout = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        setUser(null);
-    };
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+  };
 
-    return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
