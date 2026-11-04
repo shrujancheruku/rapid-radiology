@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { api } from "@/clients/apiClient";
+import { api, sampleFindings } from "@/backend";
 import { type ModelId, type NormalTemplate, ReportType } from "@/types";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -141,6 +141,7 @@ export default function HomePage() {
               selectedType={selectedType}
               onSelect={(reportType) => {
                 setSelectedType(reportType);
+                setFindings(sampleFindings(reportType));
                 setStep(2);
               }}
             />

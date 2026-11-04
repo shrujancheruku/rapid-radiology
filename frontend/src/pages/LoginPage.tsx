@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from "react";
+import { DEMO_MODE } from "@/backend";
 import { useAuth } from "@/contexts/useAuth";
 import { useNavigate } from "react-router-dom";
 
@@ -12,8 +13,10 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(
+    DEMO_MODE ? "demo@rapidradiology.dev" : "",
+  );
+  const [password, setPassword] = useState(DEMO_MODE ? "demo" : "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -60,6 +63,11 @@ export default function LoginPage() {
               required
               placeholder="Password"
             />
+            {DEMO_MODE && (
+              <p className="text-sm text-muted-foreground">
+                Demo: any email and password works
+              </p>
+            )}
             {error && (
               <Alert variant="destructive">
                 <AlertTitle>Login Error</AlertTitle>

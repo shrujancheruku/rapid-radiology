@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/clients/supabaseClient";
+import { auth } from "@/backend";
+import type { AppUser } from "@/backend/types";
 import { AuthContext } from "@/contexts/useAuth";
 
 interface Props {
@@ -8,38 +8,26 @@ interface Props {
 }
 
 export const AuthProvider = ({ children }: Props) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    auth.getUser().then((u) => {
+      setUser(u);
       setLoading(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    return auth.onChange((u) => {
+      setUser(u);
       setLoading(false);
     });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-  };
+  const login = (email: string, password: string) =>
+    auth.signIn(email, password);
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    await auth.signOut();
     setUser(null);
   };
 
