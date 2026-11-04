@@ -42,7 +42,7 @@ Fix formatting with `uv run ruff format .` / `npm run format`.
 ## Gates
 
 - **Start gates:** none.
-- **Merge gates:** any PR touching a risk path (see Review) or adding/changing a file in `.github/workflows/` waits for the user's go-ahead to merge.
+- **Merge gates:** none. The orchestrator merges every approved PR with green CI, including ones touching risk paths or `.github/workflows/` (those still get the L review).
 
 ## Human-only steps
 
